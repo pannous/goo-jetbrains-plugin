@@ -8,13 +8,14 @@ import com.pannous.goo.lexer.GooTokenTypes
 class GooSpacingBuilder(settings: CodeStyleSettings) : SpacingBuilder(settings, GooLanguage) {
     
     init {
-        // Basic spacing rules for Goo language
-        around(GooTokenTypes.OPERATOR).spaces(1)
-        after(GooTokenTypes.KEYWORD).spaces(1)
+        // Minimal spacing rules - don't apply to ALL operators/keywords
+        // Only specific cases to avoid excessive spacing
         
-        // Brace spacing
+        // Brace formatting only
         before(GooTokenTypes.LBRACE).spaces(1)
         after(GooTokenTypes.LBRACE).lineBreakInCode()
         before(GooTokenTypes.RBRACE).lineBreakInCode()
+        
+        // Very minimal - let the code keep its existing spacing mostly
     }
 }

@@ -26,15 +26,39 @@ class GooBlock(
     }
 
     override fun getIndent(): Indent? {
-        val type = node.elementType
-        val parentType = node.treeParent?.elementType
-
+        val nodeText = node.text.trim()
+        val parent = node.treeParent
+        
         return when {
-            // Indent inside { ... }
-            parentType == GooTokenTypes.LBRACE -> Indent.getNormalIndent()
-            parentType == GooTokenTypes.RBRACE -> Indent.getNoneIndent()
+            // Top-level declarations should not be indented
+            nodeText.startsWith("package") ||
+            nodeText.startsWith("import") ||
+            nodeText.startsWith("func") ||
+            nodeText.startsWith("type") ||
+            nodeText.startsWith("const") ||
+            nodeText.startsWith("var") -> Indent.getNoneIndent()
+            
+            // Braces themselves should not be indented from their parent
+            node.elementType == GooTokenTypes.LBRACE ||
+            node.elementType == GooTokenTypes.RBRACE -> Indent.getNoneIndent()
+            
+            // Check if we have a brace ancestor - meaning we're inside a block
+            hasBlockAncestor() -> Indent.getNormalIndent()
+            
             else -> Indent.getNoneIndent()
         }
+    }
+    
+    private fun hasBlockAncestor(): Boolean {
+        var current = node.treeParent
+        while (current != null) {
+            // Check if any ancestor contains an opening brace
+            if (current.findChildByType(GooTokenTypes.LBRACE) != null) {
+                return true
+            }
+            current = current.treeParent
+        }
+        return false
     }
 
     private fun buildChildren(): List<Block> {
