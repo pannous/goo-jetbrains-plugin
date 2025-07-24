@@ -17,8 +17,8 @@ repositories {
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
-            sinceBuild = "251"
-            untilBuild = "251.*"
+            sinceBuild = "243"
+            untilBuild = "243.*"
         }
     }
     
@@ -27,7 +27,7 @@ intellijPlatform {
 
 dependencies {
     intellijPlatform {
-        goland("2025.1.3")
+        goland("2024.3")
         instrumentationTools()
         pluginVerifier()
         zipSigner()
@@ -54,8 +54,8 @@ tasks {
     }
 
     patchPluginXml {
-        sinceBuild.set("251")
-        untilBuild.set("251.*")
+        sinceBuild.set("243")
+        untilBuild.set("243.*")
     }
     
     buildSearchableOptions {
