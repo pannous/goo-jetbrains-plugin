@@ -52,6 +52,9 @@
         
         <!-- Color Settings Page -->
         <colorSettingsPage implementation="com.pannous.goo.settings.GooColorSettingsPage"/>
+        
+        <!-- Comment Support -->
+        <lang.commenter language="Goo" implementationClass="com.pannous.goo.GooCommenter"/>
     </extensions>
 
     <actions>
