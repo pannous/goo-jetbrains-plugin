@@ -14,7 +14,7 @@
     # comment and shebang support,
     ø/¬/≠/not operator instead of !,
     and/or operators,
-    printf as synonym for fmt.Println!
+    printf as synonym for fmt.Println!!!
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
@@ -55,6 +55,7 @@
         
         <!-- Formatter Support -->
         <lang.formatter language="Goo" implementationClass="com.pannous.goo.formatting.GooFormattingModelBuilder"/>
+        <formattingService implementation="com.pannous.goo.formatting.GooExternalFormatter"/>
     </extensions>
 
     <actions>
