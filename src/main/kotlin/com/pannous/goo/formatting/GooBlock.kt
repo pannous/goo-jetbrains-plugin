@@ -36,7 +36,6 @@ class GooBlock(
 
     override fun getIndent(): Indent? {
         val nodeText = myNode.text.trim()
-        val parentText = myNode.treeParent?.text ?: ""
         
         return when {
             // Top-level keywords should never be indented
@@ -55,13 +54,26 @@ class GooBlock(
             // Closing brace - no additional indent  
             nodeText == "}" -> Indent.getNoneIndent()
             
-            // Simple rule: if parent contains opening brace, indent the content
-            parentText.contains("{") && nodeText != "{" && nodeText != "}" -> 
-                Indent.getNormalIndent()
+            // More aggressive: if we have ANY ancestor that contains braces, indent
+            hasBlockAncestor() -> Indent.getNormalIndent()
             
             // Default: no indent
             else -> Indent.getNoneIndent()
         }
+    }
+    
+    private fun hasBlockAncestor(): Boolean {
+        var current = myNode.treeParent
+        
+        while (current != null) {
+            val currentText = current.text
+            if (currentText.contains("{")) {
+                return true
+            }
+            current = current.treeParent
+        }
+        
+        return false
     }
     
     private fun isInsideBlock(): Boolean {
