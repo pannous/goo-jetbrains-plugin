@@ -53,6 +53,14 @@ tasks {
         enabled = false
     }
     
+    // Copy goo binary to resources before processing resources
+    processResources {
+        from("bin/go") {
+            into("bin")
+            rename("go", "goo")
+        }
+    }
+    
     runIde {
         jvmArgs = listOf("-Xmx2048m", "-XX:+UseG1GC")
         systemProperty("idea.auto.reload.plugins", "true")

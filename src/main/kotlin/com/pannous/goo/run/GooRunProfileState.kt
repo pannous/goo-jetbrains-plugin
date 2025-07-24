@@ -77,30 +77,46 @@ class GooRunProfileState(
     }
     
     private fun findBundledGooBinary(): String? {
-        // Try multiple methods to find the bundled binary
+        // Try to find the bundled binary in plugin resources
+        try {
+            // First try to find via class loader resource
+            val resourceUrl = this.javaClass.classLoader.getResource("bin/goo")
+            if (resourceUrl != null) {
+                // If it's a jar: URL, we need to extract it
+                if (resourceUrl.protocol == "jar") {
+                    // Extract the binary to a temp location
+                    val inputStream = resourceUrl.openStream()
+                    val tempFile = File.createTempFile("goo-binary", "")
+                    tempFile.deleteOnExit()
+                    tempFile.setExecutable(true)
+                    
+                    inputStream.use { input ->
+                        tempFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    return tempFile.absolutePath
+                } else {
+                    // It's a file: URL, we can use it directly
+                    return File(resourceUrl.toURI()).absolutePath
+                }
+            }
+        } catch (e: Exception) {
+            // Fall back to other methods if resource loading fails
+        }
+        
+        // Fallback methods for development/testing
         val possibleLocations = listOf(
-            // Method 1: Look for plugin JAR in classpath
-            System.getProperty("java.class.path")
-                .split(File.pathSeparator)
-                .find { it.contains("goo") && it.endsWith(".jar") }
-                ?.let { File(it).parentFile }
-                ?.let { File(it, "goo") },
-                
-            // Method 2: Look relative to plugin directory
-            System.getProperty("java.class.path")
-                .split(File.pathSeparator)
-                .find { it.contains("plugins") && it.contains("goo") }
-                ?.let { File(it).parentFile }
-                ?.let { File(it, "goo") },
-                
-            // Method 3: Look in common plugin locations
+            // Look in build output
+            File("build/resources/main/bin/goo"),
+            File("src/main/resources/bin/goo"),
+            // Development location
             File("/opt/other/goo-intellij/goo"),
             File("./goo"),
             File("../goo")
         )
         
         return possibleLocations
-            .filterNotNull()
             .find { it.exists() && it.canExecute() }
             ?.absolutePath
     }
