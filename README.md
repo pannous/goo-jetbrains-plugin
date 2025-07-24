@@ -1,6 +1,6 @@
 # goo-intellij
 
-[Goo](https://github.com/pannous/goo) programming language plugin for IntelliJ IDEs   
+[Goo](https://github.com/pannous/goo) programming language plugin for Jetbrain IDEs like [GoLand](https://www.jetbrains.com/go/)
 
 https://github.com/pannous/goo  
 
