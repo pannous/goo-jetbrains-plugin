@@ -29,7 +29,12 @@ class GooFormattingModelBuilder : FormattingModelBuilder {
     }
     
     private fun createSpaceBuilder(settings: CodeStyleSettings): SpacingBuilder {
-        // Minimal spacing builder - focus on indentation instead
+        // Restore working spacing rules that trigger the formatter
         return SpacingBuilder(settings, GooLanguage)
+            // Basic spacing around operators (this was working before)
+            .around(GooTokenTypes.OPERATOR).spaces(1)
+            
+            // Space after keywords (this was working before)
+            .after(GooTokenTypes.KEYWORD).spaces(1)
     }
 }

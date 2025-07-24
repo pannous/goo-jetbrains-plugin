@@ -36,8 +36,8 @@ class GooBlock(
 
     override fun getIndent(): Indent? {
         val nodeText = myNode.text.trim()
+        val parentText = myNode.treeParent?.text ?: ""
         
-        // DEBUG: Always indent non-brace, non-keyword content
         return when {
             // Top-level keywords should never be indented
             nodeText.startsWith("package") || 
@@ -55,13 +55,11 @@ class GooBlock(
             // Closing brace - no additional indent  
             nodeText == "}" -> Indent.getNoneIndent()
             
-            // For debugging: if we're not at the start of the file and not a brace/keyword,
-            // and we have a parent, try indenting
-            myNode.treeParent != null && 
-            nodeText.isNotEmpty() && 
-            !nodeText.matches(Regex("^\\s*$")) -> Indent.getNormalIndent()
+            // Simple rule: if parent contains opening brace, indent the content
+            parentText.contains("{") && nodeText != "{" && nodeText != "}" -> 
+                Indent.getNormalIndent()
             
-            // Default: no indent for everything else
+            // Default: no indent
             else -> Indent.getNoneIndent()
         }
     }
