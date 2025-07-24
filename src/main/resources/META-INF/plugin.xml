@@ -55,6 +55,9 @@
         
         <!-- Comment Support -->
         <lang.commenter language="Goo" implementationClass="com.pannous.goo.GooCommenter"/>
+        
+        <!-- Formatter Support -->
+        <lang.formatter language="Goo" implementationClass="com.pannous.goo.formatting.GooFormattingModelBuilder"/>
     </extensions>
 
     <actions>
