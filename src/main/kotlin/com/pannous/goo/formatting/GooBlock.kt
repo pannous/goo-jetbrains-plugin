@@ -27,7 +27,6 @@ class GooBlock(
 
     override fun getIndent(): Indent? {
         val nodeText = node.text.trim()
-        val parent = node.treeParent
         
         return when {
             // Top-level declarations should not be indented
@@ -42,23 +41,15 @@ class GooBlock(
             node.elementType == GooTokenTypes.LBRACE ||
             node.elementType == GooTokenTypes.RBRACE -> Indent.getNoneIndent()
             
-            // Check if we have a brace ancestor - meaning we're inside a block
-            hasBlockAncestor() -> Indent.getNormalIndent()
+            // Simple approach: if we're not empty and not at file start, indent everything else
+            // This should force indentation to show if the mechanism works
+            nodeText.isNotEmpty() && 
+            node.startOffset > 0 &&
+            node.elementType != GooTokenTypes.LBRACE &&
+            node.elementType != GooTokenTypes.RBRACE -> Indent.getNormalIndent()
             
             else -> Indent.getNoneIndent()
         }
-    }
-    
-    private fun hasBlockAncestor(): Boolean {
-        var current = node.treeParent
-        while (current != null) {
-            // Check if any ancestor contains an opening brace
-            if (current.findChildByType(GooTokenTypes.LBRACE) != null) {
-                return true
-            }
-            current = current.treeParent
-        }
-        return false
     }
 
     private fun buildChildren(): List<Block> {
