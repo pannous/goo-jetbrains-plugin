@@ -13,20 +13,22 @@ class GooRunConfiguration(
     name: String
 ) : RunConfigurationBase<GooRunConfigurationOptions>(project, factory, name) {
 
+    private val gooOptions = GooRunConfigurationOptions()
+    
     override fun getOptions(): RunConfigurationOptions {
-        return super.getOptions()
+        return gooOptions
     }
 
     var filePath: String
-        get() = options.filePath ?: ""
+        get() = gooOptions.filePath ?: ""
         set(value) {
-            options.filePath = value
+            gooOptions.filePath = value
         }
 
     var workingDirectory: String
-        get() = options.workingDirectory ?: ""
+        get() = gooOptions.workingDirectory ?: ""
         set(value) {
-            options.workingDirectory = value
+            gooOptions.workingDirectory = value
         }
 
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
@@ -44,7 +46,7 @@ class GooRunConfiguration(
     }
 }
 
-class GooRunConfigurationOptions : BaseState() {
+class GooRunConfigurationOptions : RunConfigurationOptions() {
     var filePath: String? by string()
     var workingDirectory: String? by string()
 }

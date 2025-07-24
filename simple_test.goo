@@ -1,0 +1,25 @@
+#!/usr/bin/env goo
+
+# Simple Goo test program
+printf("Hello from Goo!")
+
+# Test Goo syntax features
+x := 42
+y := 0
+
+if x and y == 0 {
+    printf("x is truthy and y is zero")
+}
+
+if x ≠ y {
+    printf("x is not equal to y")
+}
+
+ptr := ø
+if ptr == ø {
+    printf("ptr is nil")
+}
+
+check x > 0
+
+printf("Type of x:", typeof(x))
