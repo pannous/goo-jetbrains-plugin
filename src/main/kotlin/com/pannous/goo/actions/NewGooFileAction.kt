@@ -11,7 +11,7 @@ class NewGooFileAction : CreateFileFromTemplateAction("Goo File", "Create new Go
     override fun buildDialog(project: Project, directory: PsiDirectory, builder: CreateFileFromTemplateDialog.Builder) {
         builder
             .setTitle("New Goo File")
-            .addKind("Goo file", GooIcons.FILE, "Goo File")
+            .addKind("Goo file", GooIcons.FILE, "GooFile")
     }
 
     override fun getActionName(directory: PsiDirectory?, newName: String, templateName: String?): String {

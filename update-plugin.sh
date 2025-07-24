@@ -19,13 +19,13 @@ if [ -d "$PLUGIN_DIR/$PLUGIN_NAME" ]; then
 fi
 
 # Copy new plugin
-cp -r "build/idea-sandbox/GO-2025.1.3/plugins/$PLUGIN_NAME" "$PLUGIN_DIR/"
+cp -r ".sandbox/GO-2025.1.3/plugins/$PLUGIN_NAME" "$PLUGIN_DIR/"
 
 # Update soft links
 echo "🔗 Updating project soft links..."
 rm -f goo-intellij-plugin.jar goo-intellij-plugin-dir
 ln -s build/libs/goo-intellij-*.jar goo-intellij-plugin.jar
-ln -s build/idea-sandbox/GO-2025.1.3/plugins/goo-intellij goo-intellij-plugin-dir
+ln -s .sandbox/GO-2025.1.3/plugins/goo-intellij goo-intellij-plugin-dir
 
 echo "✅ Plugin updated successfully!"
 

@@ -56,7 +56,7 @@
 
     <actions>
         <!-- New File Action -->
-        <action id="Goo.NewFile" class="com.pannous.goo.actions.NewGooFileAction"
+        <action id="Goo.NewFile" class="com.pannous.goo.actions.SimpleNewGooFileAction"
                 text="Goo File" description="Create new Goo file">
             <add-to-group group-id="NewGroup" anchor="before" relative-to-action="NewFile"/>
         </action>
