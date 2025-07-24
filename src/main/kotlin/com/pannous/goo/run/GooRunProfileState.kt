@@ -21,7 +21,22 @@ class GooRunProfileState(
         // Validate the binary before attempting to run
         validateGooBinary(commandLine.exePath)
         
-        return ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
+        try {
+            return ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
+        } catch (e: Exception) {
+            throw ExecutionException(
+                "Failed to start Goo process:\n" +
+                "Command: ${commandLine.commandLineString}\n" +
+                "Working directory: ${commandLine.workDirectory?.absolutePath}\n" +
+                "Error: ${e.message}\n" +
+                "\n" +
+                "Make sure:\n" +
+                "1. The Goo binary is properly installed\n" +
+                "2. The .goo file exists and is accessible\n" +
+                "3. You have proper permissions to execute the binary",
+                e
+            )
+        }
     }
     
     private fun validateGooBinary(binaryPath: String) {
@@ -39,16 +54,32 @@ class GooRunProfileState(
                 .redirectErrorStream(true)
                 .start()
             
+            val output = process.inputStream.bufferedReader().readText()
             val exitCode = process.waitFor()
+            
+            // Check if this is standard Go (which won't work with .goo files)
+            if (output.contains("go version go") && !output.contains("goo")) {
+                throw ExecutionException(
+                    "Standard Go binary detected, but Goo files require Goo compiler!\n" +
+                    "Binary: $binaryPath\n" +
+                    "This is the standard Go compiler which cannot run .goo files.\n" +
+                    "\n" +
+                    "Solutions:\n" +
+                    "1. Install the Goo compiler and ensure 'goo' is in PATH\n" +
+                    "2. Place a Goo binary in your project's bin/ directory\n" +
+                    "3. Set GOROOT to point to Goo installation (not standard Go)\n" +
+                    "\n" +
+                    "Current binary version: $output"
+                )
+            }
+            
             if (exitCode != 0) {
-                val output = process.inputStream.bufferedReader().readText()
                 throw ExecutionException(
                     "Goo binary validation failed (exit code: $exitCode)\n" +
                     "Binary: $binaryPath\n" +
                     "Output: $output\n" +
                     "This may indicate the binary is in development or broken state.\n" +
                     "Common issues:\n" +
-                    "- Binary may be standard Go instead of Goo\n" +
                     "- Binary may be incomplete/corrupted\n" +
                     "- Missing required Go toolchain components"
                 )
