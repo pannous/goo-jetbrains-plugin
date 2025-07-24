@@ -46,7 +46,3 @@ class GooRunConfiguration(
     }
 }
 
-class GooRunConfigurationOptions : RunConfigurationOptions() {
-    var filePath: String? by string()
-    var workingDirectory: String? by string()
-}

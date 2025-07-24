@@ -55,7 +55,7 @@
         
         <!-- Formatter Support -->
         <lang.formatter language="Goo" implementationClass="com.pannous.goo.formatting.GooFormattingModelBuilder"/>
-        <!-- <formattingService implementation="com.pannous.goo.formatting.GooExternalFormatter"/> -->
+        <formattingService implementation="com.pannous.goo.formatting.GooExternalFormatter"/>
     </extensions>
 
     <actions>
