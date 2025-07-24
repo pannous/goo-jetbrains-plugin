@@ -35,6 +35,13 @@ dependencies {
     }
 }
 
+configurations {
+    all {
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk7")
+    }
+}
+
 tasks {
     withType<JavaCompile> {
         sourceCompatibility = "21"
@@ -52,6 +59,10 @@ tasks {
     }
     
     buildSearchableOptions {
+        enabled = false
+    }
+    
+    jarSearchableOptions {
         enabled = false
     }
     
