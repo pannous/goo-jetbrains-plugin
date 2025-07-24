@@ -1,0 +1,12 @@
+#!/usr/bin/env goo
+package main
+
+func main() {
+    z := [10, 20, 30]
+    a := z#1       // This should be parsed as hash operator, not comment
+    # This should be parsed as a comment
+    // This should also be parsed as a comment
+    x := 5 / 2     // Division operator
+    y := a#0       // Another hash operator
+    println(a)     # Another comment with space before
+}

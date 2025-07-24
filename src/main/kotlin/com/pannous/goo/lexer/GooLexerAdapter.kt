@@ -43,13 +43,39 @@ class GooLexerAdapter : LexerBase() {
                 currentToken = TokenType.WHITE_SPACE
             }
             
-            // Handle comments starting with #
+            // Handle comments starting with # (only when preceded by whitespace or at start of line)
             char == '#' -> {
-                while (currentOffset < endOffset && buffer[currentOffset] != '\n') {
+                val prevChar = if (tokenStart > 0) buffer[tokenStart - 1] else ' '
+                if (prevChar.isWhitespace() || tokenStart == 0) {
+                    // It's a comment - consume until end of line
+                    while (currentOffset < endOffset && buffer[currentOffset] != '\n') {
+                        currentOffset++
+                    }
+                    tokenEnd = currentOffset
+                    currentToken = GooTokenTypes.COMMENT
+                } else {
+                    // It's a hash operator (e.g., z#1)
                     currentOffset++
+                    tokenEnd = currentOffset
+                    currentToken = GooTokenTypes.OPERATOR
                 }
-                tokenEnd = currentOffset
-                currentToken = GooTokenTypes.COMMENT
+            }
+            
+            // Handle / - either // comment or division operator
+            char == '/' -> {
+                if (currentOffset + 1 < endOffset && buffer[currentOffset + 1] == '/') {
+                    // It's a // comment - consume until end of line
+                    while (currentOffset < endOffset && buffer[currentOffset] != '\n') {
+                        currentOffset++
+                    }
+                    tokenEnd = currentOffset
+                    currentToken = GooTokenTypes.COMMENT
+                } else {
+                    // It's a division operator
+                    currentOffset++
+                    tokenEnd = currentOffset
+                    currentToken = GooTokenTypes.OPERATOR
+                }
             }
             
             // Handle string literals
@@ -97,8 +123,8 @@ class GooLexerAdapter : LexerBase() {
                 currentToken = GooTokenTypes.KEYWORD
             }
             
-            // Handle operators and punctuation
-            char in "(){}[],:;=<>!&|+-*/%." -> {
+            // Handle operators and punctuation (excluding / which is handled above for // comments)
+            char in "(){}[],:;=<>!&|+-*%." -> {
                 // Handle multi-character operators
                 if (currentOffset + 1 < endOffset) {
                     val twoChar = buffer.substring(currentOffset, currentOffset + 2)
