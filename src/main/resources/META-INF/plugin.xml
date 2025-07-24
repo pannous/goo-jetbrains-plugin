@@ -32,6 +32,7 @@
         
         <!-- Run Configuration -->
         <configurationType implementation="com.pannous.goo.run.GooRunConfigurationType"/>
+        <runConfigurationProducer implementation="com.pannous.goo.run.GooRunConfigurationProducer"/>
         
         <!-- Code Completion -->
         <completion.contributor language="Goo"
@@ -57,6 +58,14 @@
         <action id="Goo.NewFile" class="com.pannous.goo.actions.SimpleNewGooFileAction"
                 text="Goo File" description="Create new Goo file">
             <add-to-group group-id="NewGroup" anchor="before" relative-to-action="NewFile"/>
+        </action>
+        
+        <!-- Run Goo File Action -->
+        <action id="Goo.RunFile" class="com.pannous.goo.actions.GooRunAction" 
+                text="Run Goo File" description="Run the selected Goo file">
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="first"/>
+            <add-to-group group-id="RunMenu" anchor="first"/>
         </action>
         
     </actions>
