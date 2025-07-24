@@ -14,7 +14,7 @@
     # comment and shebang support,
     ø/¬/≠/not operator instead of !,
     and/or operators,
-    printf as synonym for fmt.Println!!!
+    printf as synonym for fmt.Println
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
@@ -35,9 +35,6 @@
         <!-- Run Configuration -->
         <configurationType implementation="com.pannous.goo.run.GooRunConfigurationType"/>
         <runConfigurationProducer implementation="com.pannous.goo.run.GooRunConfigurationProducer"/>
-        
-        <!-- Program Runner -->
-        <programRunner implementation="com.pannous.goo.run.GooRunner"/>
         
         <!-- Code Completion -->
         <completion.contributor language="Goo"

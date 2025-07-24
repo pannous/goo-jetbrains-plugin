@@ -28,8 +28,4 @@ class GooConfigurationFactory(type: ConfigurationType) : ConfigurationFactory(ty
     override fun createTemplateConfiguration(project: Project): RunConfiguration {
         return GooRunConfiguration(project, this, "Goo")
     }
-    
-    override fun getOptionsClass(): Class<out BaseState>? {
-        return GooRunConfigurationOptions::class.java
-    }
 }
