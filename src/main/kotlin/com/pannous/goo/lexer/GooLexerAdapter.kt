@@ -31,25 +31,115 @@ class GooLexerAdapter : LexerBase() {
 
         tokenStart = currentOffset
         
-        // Skip whitespace
-        while (currentOffset < endOffset && buffer[currentOffset].isWhitespace()) {
-            currentOffset++
+        val char = buffer[currentOffset]
+        
+        when {
+            // Handle whitespace
+            char.isWhitespace() -> {
+                while (currentOffset < endOffset && buffer[currentOffset].isWhitespace()) {
+                    currentOffset++
+                }
+                tokenEnd = currentOffset
+                currentToken = TokenType.WHITE_SPACE
+            }
+            
+            // Handle comments starting with #
+            char == '#' -> {
+                while (currentOffset < endOffset && buffer[currentOffset] != '\n') {
+                    currentOffset++
+                }
+                tokenEnd = currentOffset
+                currentToken = GooTokenTypes.COMMENT
+            }
+            
+            // Handle string literals
+            char == '"' -> {
+                currentOffset++ // Skip opening quote
+                while (currentOffset < endOffset && buffer[currentOffset] != '"') {
+                    if (buffer[currentOffset] == '\\' && currentOffset + 1 < endOffset) {
+                        currentOffset += 2 // Skip escaped character
+                    } else {
+                        currentOffset++
+                    }
+                }
+                if (currentOffset < endOffset) {
+                    currentOffset++ // Skip closing quote
+                }
+                tokenEnd = currentOffset
+                currentToken = GooTokenTypes.STRING
+            }
+            
+            // Handle numbers
+            char.isDigit() -> {
+                while (currentOffset < endOffset && (buffer[currentOffset].isDigit() || buffer[currentOffset] == '.')) {
+                    currentOffset++
+                }
+                tokenEnd = currentOffset
+                currentToken = GooTokenTypes.NUMBER
+            }
+            
+            // Handle Goo-specific unicode operators
+            char == '≠' -> {
+                currentOffset++
+                tokenEnd = currentOffset
+                currentToken = GooTokenTypes.OPERATOR
+            }
+            
+            char == '¬' -> {
+                currentOffset++
+                tokenEnd = currentOffset
+                currentToken = GooTokenTypes.OPERATOR
+            }
+            
+            char == 'ø' -> {
+                currentOffset++
+                tokenEnd = currentOffset
+                currentToken = GooTokenTypes.KEYWORD
+            }
+            
+            // Handle operators and punctuation
+            char in "(){}[],:;=<>!&|+-*/%." -> {
+                // Handle multi-character operators
+                if (currentOffset + 1 < endOffset) {
+                    val twoChar = buffer.substring(currentOffset, currentOffset + 2)
+                    when (twoChar) {
+                        "==", "!=", "<=", ">=", "&&", "||", ":=" -> {
+                            currentOffset += 2
+                            tokenEnd = currentOffset
+                            currentToken = GooTokenTypes.OPERATOR
+                            return
+                        }
+                    }
+                }
+                currentOffset++
+                tokenEnd = currentOffset
+                currentToken = GooTokenTypes.OPERATOR
+            }
+            
+            // Handle identifiers and keywords
+            char.isLetter() || char == '_' -> {
+                while (currentOffset < endOffset && (buffer[currentOffset].isLetterOrDigit() || buffer[currentOffset] == '_')) {
+                    currentOffset++
+                }
+                tokenEnd = currentOffset
+                val text = buffer.substring(tokenStart, tokenEnd).toString()
+                
+                // Check if it's a Goo keyword
+                currentToken = when (text) {
+                    "and", "or", "not", "def", "void", "func", "if", "else", "for", "while", 
+                    "return", "break", "continue", "package", "import", "var", "const",
+                    "printf", "check", "typeof" -> GooTokenTypes.KEYWORD
+                    else -> GooTokenTypes.IDENTIFIER
+                }
+            }
+            
+            // Handle any other character
+            else -> {
+                currentOffset++
+                tokenEnd = currentOffset
+                currentToken = GooTokenTypes.IDENTIFIER
+            }
         }
-        
-        if (currentOffset >= endOffset) {
-            currentToken = null
-            return
-        }
-        
-        tokenStart = currentOffset
-        
-        // Simple tokenization - just consume non-whitespace characters
-        while (currentOffset < endOffset && !buffer[currentOffset].isWhitespace()) {
-            currentOffset++
-        }
-        
-        tokenEnd = currentOffset
-        currentToken = GooTokenTypes.IDENTIFIER
     }
 
     override fun getState(): Int = 0

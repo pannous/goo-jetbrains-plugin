@@ -11,6 +11,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.tree.IFileElementType
 import com.intellij.psi.tree.TokenSet
 import com.pannous.goo.lexer.GooLexer
+import com.pannous.goo.lexer.GooTokenTypes
 import com.pannous.goo.parser.GooParser
 import com.pannous.goo.psi.GooFile
 
@@ -26,9 +27,9 @@ class GooParserDefinition : ParserDefinition {
     
     override fun getFileNodeType(): IFileElementType = FILE
     
-    override fun getCommentTokens(): TokenSet = TokenSet.EMPTY
+    override fun getCommentTokens(): TokenSet = TokenSet.create(GooTokenTypes.COMMENT)
     
-    override fun getStringLiteralElements(): TokenSet = TokenSet.EMPTY
+    override fun getStringLiteralElements(): TokenSet = TokenSet.create(GooTokenTypes.STRING)
     
     override fun createElement(node: ASTNode?): PsiElement {
         throw AssertionError("createElement should never be called for PsiFile nodes")

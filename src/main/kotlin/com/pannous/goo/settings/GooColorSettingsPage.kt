@@ -16,7 +16,8 @@ class GooColorSettingsPage : ColorSettingsPage {
         AttributesDescriptor("String", GooSyntaxHighlighter.STRING),
         AttributesDescriptor("Number", GooSyntaxHighlighter.NUMBER),
         AttributesDescriptor("Comment", GooSyntaxHighlighter.COMMENT),
-        AttributesDescriptor("Identifier", GooSyntaxHighlighter.IDENTIFIER)
+        AttributesDescriptor("Identifier", GooSyntaxHighlighter.IDENTIFIER),
+        AttributesDescriptor("Operator", GooSyntaxHighlighter.OPERATOR)
     )
     
     override fun getAttributeDescriptors(): Array<AttributesDescriptor> = attributes

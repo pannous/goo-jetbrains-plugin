@@ -1,0 +1,8 @@
+#!/usr/bin/env goo
+
+# Test lexer fix
+printf("Hello World")
+x := 42
+if x ≠ 0 {
+    printf("Working!")
+}

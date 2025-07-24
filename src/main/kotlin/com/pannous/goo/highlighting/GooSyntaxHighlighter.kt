@@ -16,6 +16,7 @@ class GooSyntaxHighlighter : SyntaxHighlighterBase() {
         val NUMBER = TextAttributesKey.createTextAttributesKey("GOO_NUMBER", DefaultLanguageHighlighterColors.NUMBER)
         val COMMENT = TextAttributesKey.createTextAttributesKey("GOO_COMMENT", DefaultLanguageHighlighterColors.LINE_COMMENT)
         val IDENTIFIER = TextAttributesKey.createTextAttributesKey("GOO_IDENTIFIER", DefaultLanguageHighlighterColors.IDENTIFIER)
+        val OPERATOR = TextAttributesKey.createTextAttributesKey("GOO_OPERATOR", DefaultLanguageHighlighterColors.OPERATION_SIGN)
     }
     
     override fun getHighlightingLexer(): Lexer = GooLexer()
@@ -27,6 +28,7 @@ class GooSyntaxHighlighter : SyntaxHighlighterBase() {
             GooTokenTypes.NUMBER -> arrayOf(NUMBER)
             GooTokenTypes.COMMENT -> arrayOf(COMMENT)
             GooTokenTypes.IDENTIFIER -> arrayOf(IDENTIFIER)
+            GooTokenTypes.OPERATOR -> arrayOf(OPERATOR)
             else -> emptyArray()
         }
     }
