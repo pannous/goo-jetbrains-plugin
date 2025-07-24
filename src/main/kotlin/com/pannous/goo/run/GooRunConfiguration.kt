@@ -19,11 +19,19 @@ class GooRunConfiguration(
 
     companion object {
         private val LOG = Logger.getInstance(GooRunConfiguration::class.java)
+        
+        init {
+            LOG.warn("=== GooRunConfiguration CLASS LOADED ===")
+        }
     }
 
     var scriptName = ""
     var filePath = ""
     var workingDirectory = ""
+    
+    init {
+        LOG.warn("=== GooRunConfiguration INSTANCE CREATED: project=${project.name}, name=$name ===")
+    }
 
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
         LOG.info("GooRunConfiguration: Creating configuration editor")
