@@ -4,7 +4,7 @@
     <vendor email="support@pannous.com" url="https://github.com/pannous/goo">Pannous</vendor>
     
     <!-- Plugin Icon -->
-    <icon-path>/icons/goo.svg</icon-path>
+<!--    <icon-path>/icons/goo.svg</icon-path>-->
 
     <description><![CDATA[
     Goo language support for IntelliJ IDEA and other JetBrains IDEs.
