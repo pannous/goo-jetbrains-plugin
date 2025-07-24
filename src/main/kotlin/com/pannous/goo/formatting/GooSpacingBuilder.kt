@@ -8,14 +8,8 @@ import com.pannous.goo.lexer.GooTokenTypes
 class GooSpacingBuilder(settings: CodeStyleSettings) : SpacingBuilder(settings, GooLanguage) {
     
     init {
-        // Minimal spacing rules - don't apply to ALL operators/keywords
-        // Only specific cases to avoid excessive spacing
-        
-        // Brace formatting only
-        before(GooTokenTypes.LBRACE).spaces(1)
-        after(GooTokenTypes.LBRACE).lineBreakInCode()
-        before(GooTokenTypes.RBRACE).lineBreakInCode()
-        
-        // Very minimal - let the code keep its existing spacing mostly
+        // NO SPACING RULES AT ALL - just preserve existing spacing
+        // This will stop the formatter from adding excessive spaces
+        // and only focus on indentation
     }
 }
