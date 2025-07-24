@@ -1,0 +1,54 @@
+<idea-plugin>
+    <id>com.pannous.goo-intellij</id>
+    <name>Goo Language Support</name>
+    <vendor email="support@pannous.com" url="https://github.com/pannous/goo">Pannous</vendor>
+
+    <description><![CDATA[
+    Goo language support for IntelliJ IDEA and other JetBrains IDEs.
+    
+    Goo is an up-to-date fork of Go with enhanced syntax including:
+    - truthy/falsey if statements
+    - # comment and shebang support
+    - and/or operators instead of &&/||
+    - ¬/not operator instead of !
+    - ≠ operator instead of !=
+    - ø keyword instead of nil
+    - printf as synonym for fmt.Println
+    - and much more!
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.goide</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- File Type -->
+        <fileType name="Goo" implementationClass="com.pannous.goo.GooFileType"
+                  fieldName="INSTANCE" language="Goo" extensions="goo"/>
+        
+        <!-- Language -->
+        <lang.parserDefinition language="Goo"
+                               implementationClass="com.pannous.goo.GooParserDefinition"/>
+        
+        <!-- Syntax Highlighter -->
+        <lang.syntaxHighlighterFactory language="Goo"
+                                       implementationClass="com.pannous.goo.GooSyntaxHighlighterFactory"/>
+        
+        <!-- Run Configuration -->
+        <configurationType implementation="com.pannous.goo.run.GooRunConfigurationType"/>
+        <runConfigurationProducer implementation="com.pannous.goo.run.GooRunConfigurationProducer"/>
+        
+        <!-- Program Runner -->
+        <programRunner implementation="com.pannous.goo.run.GooRunner"/>
+        
+        <!-- Language injection -->
+        <completion.contributor language="Goo"
+                               implementationClass="com.pannous.goo.completion.GooCompletionContributor"/>
+    </extensions>
+
+    <actions>
+        <action id="Goo.NewFile" class="com.pannous.goo.actions.NewGooFileAction"
+                text="Goo File" description="Create new Goo file">
+            <add-to-group group-id="NewGroup" anchor="before" relative-to-action="NewFile"/>
+        </action>
+    </actions>
+</idea-plugin>

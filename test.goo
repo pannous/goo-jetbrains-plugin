@@ -1,0 +1,69 @@
+#!/usr/bin/env goo
+
+# This is a test Goo file demonstrating the enhanced syntax
+
+printf("Testing Goo syntax features")
+
+x := 5
+y := 10
+
+# Test truthy/falsey
+if x {
+    printf("x is truthy")
+}
+
+if 0 {
+    printf("This won't print")
+} else {
+    printf("0 is falsey")
+}
+
+# Test and/or operators
+if x > 0 and y > 0 {
+    printf("Both x and y are positive")
+}
+
+if x < 0 or y > 0 {
+    printf("Either x is negative or y is positive")
+}
+
+# Test not operator
+if not (x > y) {
+    printf("x is not greater than y")
+}
+
+# Test unicode operators
+if x ≠ y {
+    printf("x is not equal to y")
+}
+
+if ¬(x == y) {
+    printf("x is not equal to y (unicode not)")
+}
+
+# Test nil/ø
+ptr := ø
+if ptr == ø {
+    printf("ptr is nil")
+}
+
+# Test check keyword
+check x > 0
+
+# Test typeof
+printf("Type of x:", typeof(x))
+
+# Test def keyword
+def greet(name string) {
+    printf("Hello,", name)
+}
+
+greet("World")
+
+# Test map with braces
+data := {name: "John", age: 30}
+printf("Data:", data)
+
+# Test array
+numbers := [1, 2, 3, 4, 5]
+printf("Numbers:", numbers)
