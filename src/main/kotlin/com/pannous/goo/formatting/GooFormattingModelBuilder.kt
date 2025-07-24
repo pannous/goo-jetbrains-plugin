@@ -29,8 +29,7 @@ class GooFormattingModelBuilder : FormattingModelBuilder {
     }
     
     private fun createSpaceBuilder(settings: CodeStyleSettings): SpacingBuilder {
-        // Create a very minimal spacing builder that only handles essential cases
-        // Default behavior: preserve existing spacing unless explicitly overridden
+        // Minimal spacing builder - focus on indentation instead
         return SpacingBuilder(settings, GooLanguage)
     }
 }

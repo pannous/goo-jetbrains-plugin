@@ -37,7 +37,7 @@ class GooBlock(
     override fun getIndent(): Indent? {
         val nodeText = myNode.text.trim()
         
-        // Simple indentation logic for Go-style formatting
+        // DEBUG: Always indent non-brace, non-keyword content
         return when {
             // Top-level keywords should never be indented
             nodeText.startsWith("package") || 
@@ -55,8 +55,11 @@ class GooBlock(
             // Closing brace - no additional indent  
             nodeText == "}" -> Indent.getNoneIndent()
             
-            // Check if we're inside a block by walking up the AST
-            isInsideBlock() -> Indent.getNormalIndent()
+            // For debugging: if we're not at the start of the file and not a brace/keyword,
+            // and we have a parent, try indenting
+            myNode.treeParent != null && 
+            nodeText.isNotEmpty() && 
+            !nodeText.matches(Regex("^\\s*$")) -> Indent.getNormalIndent()
             
             // Default: no indent for everything else
             else -> Indent.getNoneIndent()
@@ -64,34 +67,28 @@ class GooBlock(
     }
     
     private fun isInsideBlock(): Boolean {
+        // Simple approach: look at the node's text content and its ancestors
         var current = myNode.treeParent
+        var braceDepth = 0
         
         while (current != null) {
             val currentText = current.text
             
-            // Look for a parent that contains braces indicating a block structure
-            if (currentText.contains("{") && currentText.contains("}")) {
-                // Make sure we're actually between the braces, not outside them
-                val nodeStart = myNode.startOffset
-                val openBraceIndex = currentText.indexOf('{')
-                val closeBraceIndex = currentText.lastIndexOf('}')
-                
-                if (openBraceIndex >= 0 && closeBraceIndex >= 0) {
-                    val parentStart = current.startOffset
-                    val openBracePos = parentStart + openBraceIndex
-                    val closeBracePos = parentStart + closeBraceIndex
-                    
-                    // We're inside the block if our position is between the braces
-                    if (nodeStart > openBracePos && nodeStart < closeBracePos) {
-                        return true
-                    }
-                }
+            // Count opening and closing braces in ancestor nodes
+            val openBraces = currentText.count { it == '{' }
+            val closeBraces = currentText.count { it == '}' }
+            
+            // If we find an ancestor with more opening braces than closing braces,
+            // we're likely inside a block
+            if (openBraces > closeBraces) {
+                braceDepth += (openBraces - closeBraces)
             }
             
             current = current.treeParent
         }
         
-        return false
+        // If we have positive brace depth, we're inside a block
+        return braceDepth > 0
     }
 
     override fun getSpacing(child1: Block?, child2: Block): Spacing? {
