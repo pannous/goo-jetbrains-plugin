@@ -79,21 +79,18 @@ tasks {
             
             // Test if binary responds to version command
             try {
-                val stdOut = ByteArrayOutputStream()
-                val stdErr = ByteArrayOutputStream()
-                val result = exec {
-                    commandLine(goBinary.absolutePath, "version")
-                    isIgnoreExitValue = true
-                    standardOutput = stdOut
-                    errorOutput = stdErr
-                }
-                if (result.exitValue != 0) {
-                    val output = stdOut.toString() + stdErr.toString()
-                    println("Warning: Goo binary at bin/go failed version check (exit code: ${result.exitValue})")
+                val process = ProcessBuilder(goBinary.absolutePath, "version")
+                    .redirectErrorStream(true)
+                    .start()
+                
+                val output = process.inputStream.bufferedReader().readText()
+                val exitCode = process.waitFor()
+                
+                if (exitCode != 0) {
+                    println("Warning: Goo binary at bin/go failed version check (exit code: $exitCode)")
                     println("Output: $output")
                     println("This may indicate the binary is in development or broken state")
                 } else {
-                    val output = stdOut.toString()
                     println("Goo binary validation successful: $output")
                 }
             } catch (e: Exception) {
