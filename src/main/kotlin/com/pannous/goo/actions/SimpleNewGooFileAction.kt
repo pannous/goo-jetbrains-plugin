@@ -1,14 +1,15 @@
 package com.pannous.goo.actions
 
+import com.intellij.ide.fileTemplates.FileTemplateManager
+import com.intellij.ide.fileTemplates.FileTemplateUtil
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.ui.Messages
-import com.intellij.psi.PsiFileFactory
-import com.pannous.goo.GooFileType
-import com.pannous.goo.GooLanguage
+import com.intellij.psi.PsiDirectory
+import java.util.*
 
 class SimpleNewGooFileAction : AnAction("Goo File", "Create new Goo file", com.pannous.goo.GooIcons.FILE) {
     
@@ -28,22 +29,34 @@ class SimpleNewGooFileAction : AnAction("Goo File", "Create new Goo file", com.p
         
         val fullFileName = if (fileName.endsWith(".goo")) fileName else "$fileName.goo"
         
-        val template = """#!/usr/bin/env goo
-
-"""
-        
         WriteAction.run<RuntimeException> {
-            val psiFile = PsiFileFactory.getInstance(project)
-                .createFileFromText(fullFileName, GooFileType, template)
-            
-            val newFile = directory.add(psiFile)
-            
-            // Open the new file in editor
-            if (newFile is com.intellij.psi.PsiFile) {
-                val virtualFile = newFile.virtualFile
-                if (virtualFile != null) {
-                    FileEditorManager.getInstance(project).openFile(virtualFile, true)
+            try {
+                val templateManager = FileTemplateManager.getDefaultInstance()
+                val template = templateManager.getInternalTemplate("Goo File.goo")
+                
+                val properties = Properties()
+                properties.setProperty("NAME", fileName)
+                
+                val psiFile = FileTemplateUtil.createFromTemplate(
+                    template,
+                    fullFileName,
+                    properties,
+                    directory as PsiDirectory
+                )
+                
+                // Open the new file in editor
+                if (psiFile is com.intellij.psi.PsiFile) {
+                    val virtualFile = psiFile.virtualFile
+                    if (virtualFile != null) {
+                        FileEditorManager.getInstance(project).openFile(virtualFile, true)
+                    }
                 }
+            } catch (ex: Exception) {
+                Messages.showErrorDialog(
+                    project,
+                    "Could not create file: ${ex.message}",
+                    "Error Creating Goo File"
+                )
             }
         }
     }
