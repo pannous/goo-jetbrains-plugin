@@ -68,6 +68,40 @@ tasks {
     
     // Copy goo binary to resources before processing resources
     processResources {
+        doFirst {
+            val goBinary = file("bin/go")
+            if (!goBinary.exists()) {
+                throw GradleException("Goo binary not found at bin/go")
+            }
+            if (!goBinary.canExecute()) {
+                throw GradleException("Goo binary at bin/go is not executable")
+            }
+            
+            // Test if binary responds to version command
+            try {
+                val stdOut = ByteArrayOutputStream()
+                val stdErr = ByteArrayOutputStream()
+                val result = exec {
+                    commandLine(goBinary.absolutePath, "version")
+                    isIgnoreExitValue = true
+                    standardOutput = stdOut
+                    errorOutput = stdErr
+                }
+                if (result.exitValue != 0) {
+                    val output = stdOut.toString() + stdErr.toString()
+                    println("Warning: Goo binary at bin/go failed version check (exit code: ${result.exitValue})")
+                    println("Output: $output")
+                    println("This may indicate the binary is in development or broken state")
+                } else {
+                    val output = stdOut.toString()
+                    println("Goo binary validation successful: $output")
+                }
+            } catch (e: Exception) {
+                println("Warning: Could not validate goo binary: ${e.message}")
+                println("Proceeding with copy, but binary may not work correctly")
+            }
+        }
+        
         from("bin/go") {
             into("bin")
             rename("go", "goo")

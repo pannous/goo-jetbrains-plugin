@@ -17,7 +17,46 @@ class GooRunProfileState(
     @Throws(ExecutionException::class)
     override fun startProcess(): ProcessHandler {
         val commandLine = createCommandLine()
+        
+        // Validate the binary before attempting to run
+        validateGooBinary(commandLine.exePath)
+        
         return ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
+    }
+    
+    private fun validateGooBinary(binaryPath: String) {
+        val binaryFile = File(binaryPath)
+        if (!binaryFile.exists()) {
+            throw ExecutionException("Goo binary not found at: $binaryPath")
+        }
+        if (!binaryFile.canExecute()) {
+            throw ExecutionException("Goo binary is not executable: $binaryPath")
+        }
+        
+        // Quick validation - try to run with version command
+        try {
+            val process = ProcessBuilder(binaryPath, "version")
+                .redirectErrorStream(true)
+                .start()
+            
+            val exitCode = process.waitFor()
+            if (exitCode != 0) {
+                val output = process.inputStream.bufferedReader().readText()
+                throw ExecutionException(
+                    "Goo binary validation failed (exit code: $exitCode)\n" +
+                    "Binary: $binaryPath\n" +
+                    "Output: $output\n" +
+                    "This may indicate the binary is in development or broken state.\n" +
+                    "Common issues:\n" +
+                    "- Binary may be standard Go instead of Goo\n" +
+                    "- Binary may be incomplete/corrupted\n" +
+                    "- Missing required Go toolchain components"
+                )
+            }
+        } catch (e: Exception) {
+            if (e is ExecutionException) throw e
+            throw ExecutionException("Failed to validate goo binary at $binaryPath: ${e.message}")
+        }
     }
 
     private fun createCommandLine(): GeneralCommandLine {
