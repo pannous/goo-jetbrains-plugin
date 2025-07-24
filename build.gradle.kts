@@ -66,44 +66,6 @@ tasks {
         enabled = false
     }
     
-    // Copy goo binary to resources before processing resources
-    processResources {
-        doFirst {
-            val goBinary = file("bin/go")
-            if (!goBinary.exists()) {
-                throw GradleException("Goo binary not found at bin/go")
-            }
-            if (!goBinary.canExecute()) {
-                throw GradleException("Goo binary at bin/go is not executable")
-            }
-            
-            // Test if binary responds to version command
-            try {
-                val process = ProcessBuilder(goBinary.absolutePath, "version")
-                    .redirectErrorStream(true)
-                    .start()
-                
-                val output = process.inputStream.bufferedReader().readText()
-                val exitCode = process.waitFor()
-                
-                if (exitCode != 0) {
-                    println("Warning: Goo binary at bin/go failed version check (exit code: $exitCode)")
-                    println("Output: $output")
-                    println("This may indicate the binary is in development or broken state")
-                } else {
-                    println("Goo binary validation successful: $output")
-                }
-            } catch (e: Exception) {
-                println("Warning: Could not validate goo binary: ${e.message}")
-                println("Proceeding with copy, but binary may not work correctly")
-            }
-        }
-        
-        from("bin/go") {
-            into("bin")
-            rename("go", "goo")
-        }
-    }
     
     runIde {
         jvmArgs = listOf("-Xmx2048m", "-XX:+UseG1GC")

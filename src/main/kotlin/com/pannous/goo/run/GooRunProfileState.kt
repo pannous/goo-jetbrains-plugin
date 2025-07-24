@@ -75,14 +75,32 @@ class GooRunProfileState(
         // Add environment variables
         commandLine.environment.putAll(System.getenv())
         
+        // Ensure GOROOT is set if we can determine it
+        if (commandLine.environment["GOROOT"].isNullOrEmpty()) {
+            val goroot = System.getenv("GOROOT")
+            if (!goroot.isNullOrEmpty()) {
+                commandLine.environment["GOROOT"] = goroot
+            } else {
+                // Try to infer GOROOT from the binary path
+                val binaryFile = File(gooBinaryPath)
+                if (binaryFile.name == "go" && binaryFile.parent.endsWith("bin")) {
+                    val inferredGoroot = binaryFile.parentFile.parent
+                    commandLine.environment["GOROOT"] = inferredGoroot
+                }
+            }
+        }
+        
         return commandLine
     }
 
     private fun findGooBinary(): String {
-        // 1. First priority: bundled goo binary in plugin resources
-        val bundledBinary = findBundledGooBinary()
-        if (bundledBinary != null) {
-            return bundledBinary
+        // 1. First priority: GOROOT/bin/go (configured Go SDK)
+        val goroot = System.getenv("GOROOT")
+        if (!goroot.isNullOrEmpty()) {
+            val gorootBinary = File(goroot, "bin/go")
+            if (gorootBinary.exists() && gorootBinary.canExecute()) {
+                return gorootBinary.absolutePath
+            }
         }
 
         // 2. Second priority: project's bin directory  
@@ -91,20 +109,22 @@ class GooRunProfileState(
             return projectBin.absolutePath
         }
 
-        // 3. Third priority: local goo directory (our renamed binary)
+        // 3. Third priority: project's bin/go (development binary)
         val localGoo = File(configuration.project.basePath, "bin/go")
         if (localGoo.exists() && localGoo.canExecute()) {
             return localGoo.absolutePath
         }
 
-        // 4. Fourth priority: current directory goo binary
-        val currentDirGoo = File("./goo")
-        if (currentDirGoo.exists() && currentDirGoo.canExecute()) {
-            return currentDirGoo.absolutePath
+        // 4. Fourth priority: system PATH for 'go' binary
+        val pathDirs = System.getenv("PATH")?.split(File.pathSeparator) ?: emptyList()
+        for (pathDir in pathDirs) {
+            val goBinary = File(pathDir, "go")
+            if (goBinary.exists() && goBinary.canExecute()) {
+                return goBinary.absolutePath
+            }
         }
 
-        // 5. Last resort: system PATH
-        val pathDirs = System.getenv("PATH")?.split(File.pathSeparator) ?: emptyList()
+        // 5. Last resort: system PATH for 'goo' binary
         for (pathDir in pathDirs) {
             val gooBinary = File(pathDir, "goo")
             if (gooBinary.exists() && gooBinary.canExecute()) {
@@ -112,51 +132,10 @@ class GooRunProfileState(
             }
         }
 
-        throw ExecutionException("Goo binary not found. Please ensure goo is installed and available in PATH or bundled with the plugin.")
+        throw ExecutionException("Go/Goo binary not found. Please ensure:\n" +
+            "1. GOROOT environment variable is set to your Go installation\n" +
+            "2. Go is installed and available in PATH\n" +
+            "3. Or place a goo/go binary in your project's bin/ directory")
     }
     
-    private fun findBundledGooBinary(): String? {
-        // Try to find the bundled binary in plugin resources
-        try {
-            // First try to find via class loader resource
-            val resourceUrl = this.javaClass.classLoader.getResource("bin/goo")
-            if (resourceUrl != null) {
-                // If it's a jar: URL, we need to extract it
-                if (resourceUrl.protocol == "jar") {
-                    // Extract the binary to a temp location
-                    val inputStream = resourceUrl.openStream()
-                    val tempFile = File.createTempFile("goo-binary", "")
-                    tempFile.deleteOnExit()
-                    tempFile.setExecutable(true)
-                    
-                    inputStream.use { input ->
-                        tempFile.outputStream().use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    return tempFile.absolutePath
-                } else {
-                    // It's a file: URL, we can use it directly
-                    return File(resourceUrl.toURI()).absolutePath
-                }
-            }
-        } catch (e: Exception) {
-            // Fall back to other methods if resource loading fails
-        }
-        
-        // Fallback methods for development/testing
-        val possibleLocations = listOf(
-            // Look in build output
-            File("build/resources/main/bin/goo"),
-            File("src/main/resources/bin/goo"),
-            // Development location
-            File("/opt/other/goo-intellij/goo"),
-            File("./goo"),
-            File("../goo")
-        )
-        
-        return possibleLocations
-            .find { it.exists() && it.canExecute() }
-            ?.absolutePath
-    }
 }
