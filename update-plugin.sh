@@ -10,7 +10,7 @@ gradle clean buildPlugin
 
 echo "📦 Installing plugin to GoLand..."
 PLUGIN_DIR="/Users/me/Library/Application Support/JetBrains/GoLand2025.1/plugins"
-PLUGIN_NAME="goo-intellij"
+PLUGIN_NAME="goo"
 
 # Remove old plugin
 if [ -d "$PLUGIN_DIR/$PLUGIN_NAME" ]; then
@@ -23,9 +23,9 @@ cp -r ".sandbox/GO-2025.1.3/plugins/$PLUGIN_NAME" "$PLUGIN_DIR/"
 
 # Update soft links
 echo "🔗 Updating project soft links..."
-rm -f goo-intellij-plugin.jar goo-intellij-plugin-dir
-ln -s build/libs/goo-intellij-*.jar goo-intellij-plugin.jar
-ln -s .sandbox/GO-2025.1.3/plugins/goo-intellij goo-intellij-plugin-dir
+rm -f goo-intellij-plugin.jar goo-intellij-plugin-dir goo-plugin.jar goo-plugin-dir
+ln -s build/libs/goo-*.jar goo-plugin.jar
+ln -s .sandbox/GO-2025.1.3/plugins/goo goo-plugin-dir
 
 echo "✅ Plugin updated successfully!"
 
@@ -58,5 +58,5 @@ else
 fi
 
 echo "🎉 Development cycle complete!"
-echo "📍 Plugin JAR: $(readlink goo-intellij-plugin.jar)"
-echo "📍 Plugin Dir: $(readlink goo-intellij-plugin-dir)"
+echo "📍 Plugin JAR: $(readlink goo-plugin.jar)"
+echo "📍 Plugin Dir: $(readlink goo-plugin-dir)"

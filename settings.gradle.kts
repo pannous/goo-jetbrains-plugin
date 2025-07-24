@@ -1,1 +1,1 @@
-rootProject.name = "goo-intellij"
+rootProject.name = "goo"

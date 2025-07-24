@@ -1,5 +1,5 @@
 <idea-plugin>
-    <id>com.pannous.goo-intellij</id>
+    <id>com.pannous.goo</id>
     <name>Goo Language Support</name>
     <vendor email="support@pannous.com" url="https://github.com/pannous/goo">Pannous</vendor>
     
