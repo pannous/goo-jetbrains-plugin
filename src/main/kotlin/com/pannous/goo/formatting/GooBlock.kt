@@ -36,7 +36,6 @@ class GooBlock(
 
     override fun getIndent(): Indent? {
         val nodeText = myNode.text.trim()
-        val parentText = myNode.treeParent?.text
         
         // Simple indentation logic for Go-style formatting
         return when {
@@ -56,17 +55,43 @@ class GooBlock(
             // Closing brace - no additional indent  
             nodeText == "}" -> Indent.getNoneIndent()
             
-            // Only indent if we're directly inside a single-line block with braces
-            parentText != null && 
-            parentText.contains("{") && 
-            parentText.contains("}") && 
-            parentText.count { it == '\n' } <= 1 &&  // Single line or minimal content
-            nodeText != "{" && 
-            nodeText != "}" -> Indent.getNormalIndent()
+            // Check if we're inside a block by walking up the AST
+            isInsideBlock() -> Indent.getNormalIndent()
             
             // Default: no indent for everything else
             else -> Indent.getNoneIndent()
         }
+    }
+    
+    private fun isInsideBlock(): Boolean {
+        var current = myNode.treeParent
+        
+        while (current != null) {
+            val currentText = current.text
+            
+            // Look for a parent that contains braces indicating a block structure
+            if (currentText.contains("{") && currentText.contains("}")) {
+                // Make sure we're actually between the braces, not outside them
+                val nodeStart = myNode.startOffset
+                val openBraceIndex = currentText.indexOf('{')
+                val closeBraceIndex = currentText.lastIndexOf('}')
+                
+                if (openBraceIndex >= 0 && closeBraceIndex >= 0) {
+                    val parentStart = current.startOffset
+                    val openBracePos = parentStart + openBraceIndex
+                    val closeBracePos = parentStart + closeBraceIndex
+                    
+                    // We're inside the block if our position is between the braces
+                    if (nodeStart > openBracePos && nodeStart < closeBracePos) {
+                        return true
+                    }
+                }
+            }
+            
+            current = current.treeParent
+        }
+        
+        return false
     }
 
     override fun getSpacing(child1: Block?, child2: Block): Spacing? {
@@ -81,9 +106,8 @@ class GooBlock(
         val nodeText = myNode.text
         
         return when {
-            // Inside braces, indent new children
-            nodeText.contains("{") && !nodeText.trim().endsWith("}") -> 
-                ChildAttributes(Indent.getNormalIndent(), null)
+            // If this node contains an opening brace, indent its children
+            nodeText.contains("{") -> ChildAttributes(Indent.getNormalIndent(), null)
             
             else -> ChildAttributes(Indent.getNoneIndent(), null)
         }
