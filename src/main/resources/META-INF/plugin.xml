@@ -3,8 +3,6 @@
     <name>Goo Language Support</name>
     <vendor email="support@pannous.com" url="https://github.com/pannous/goo">Pannous</vendor>
     
-    <!-- Plugin Icon -->
-    <icon-path>/icons/goo.svg</icon-path>
 
     <description><![CDATA[
     Goo language support for IntelliJ IDEA and other JetBrains IDEs.
@@ -34,7 +32,6 @@
         
         <!-- Run Configuration -->
         <configurationType implementation="com.pannous.goo.run.GooRunConfigurationType"/>
-        <runConfigurationProducer implementation="com.pannous.goo.run.GooRunConfigurationProducer"/>
         
         <!-- Code Completion -->
         <completion.contributor language="Goo"
@@ -62,12 +59,5 @@
             <add-to-group group-id="NewGroup" anchor="before" relative-to-action="NewFile"/>
         </action>
         
-        <!-- Run Goo File Action -->
-        <action id="Goo.RunFile" class="com.pannous.goo.actions.GooRunAction" 
-                text="Run Goo File" description="Run the selected Goo file">
-            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
-            <add-to-group group-id="ProjectViewPopupMenu" anchor="first"/>
-            <add-to-group group-id="RunMenu" anchor="first"/>
-        </action>
     </actions>
 </idea-plugin>
