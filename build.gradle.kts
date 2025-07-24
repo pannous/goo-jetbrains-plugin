@@ -28,7 +28,11 @@ dependencies {
         local("/Applications/GoLand.app/Contents")
     }
 }
-
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
 tasks {
 //    patchPluginXml {
 //        sinceBuild.set("251")
