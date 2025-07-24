@@ -29,11 +29,8 @@ class GooFormattingModelBuilder : FormattingModelBuilder {
     }
     
     private fun createSpaceBuilder(settings: CodeStyleSettings): SpacingBuilder {
+        // Create a very minimal spacing builder that only handles essential cases
+        // Default behavior: preserve existing spacing unless explicitly overridden
         return SpacingBuilder(settings, GooLanguage)
-            // Basic spacing around operators (using OPERATOR token type)
-            .around(GooTokenTypes.OPERATOR).spaces(1)
-            
-            // Space after keywords
-            .after(GooTokenTypes.KEYWORD).spaces(1)
     }
 }

@@ -35,29 +35,22 @@ class GooBlock(
     }
 
     override fun getIndent(): Indent? {
-        val parentType = myNode.treeParent?.elementType
-        val nodeType = myNode.elementType
-        val nodeText = myNode.text
+        val nodeText = myNode.text.trim()
+        val parentText = myNode.treeParent?.text
         
+        // Simple indentation logic for Go-style formatting
         return when {
-            // Indent inside braces - Go style
-            parentType?.toString()?.contains("BLOCK") == true -> Indent.getNormalIndent()
+            // Opening brace - no additional indent
+            nodeText == "{" -> Indent.getNoneIndent()
             
-            // Check for braces in text content
-            nodeText == "{" || nodeText == "}" -> {
-                // Braces align with their parent
-                Indent.getNoneIndent()
-            }
+            // Closing brace - no additional indent  
+            nodeText == "}" -> Indent.getNoneIndent()
             
-            // Content inside braces should be indented
-            myNode.treeParent?.text?.contains("{") == true -> {
-                if (nodeText.trim() != "}" && nodeText.trim() != "{") {
-                    Indent.getNormalIndent()
-                } else {
-                    Indent.getNoneIndent()
-                }
-            }
+            // If parent contains braces and this isn't a brace, indent it
+            parentText != null && parentText.contains("{") && parentText.contains("}") && 
+            nodeText != "{" && nodeText != "}" -> Indent.getNormalIndent()
             
+            // Default: no indent
             else -> Indent.getNoneIndent()
         }
     }

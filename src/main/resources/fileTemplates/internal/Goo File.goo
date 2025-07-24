@@ -1,0 +1,6 @@
+#!/usr/bin/env goo
+
+#if (${PACKAGE_NAME} && ${PACKAGE_NAME} != "")package ${PACKAGE_NAME}
+
+#end
+printf("Hello from ${NAME}!")

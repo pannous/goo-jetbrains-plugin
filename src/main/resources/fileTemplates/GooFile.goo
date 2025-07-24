@@ -1,0 +1,6 @@
+#!/usr/bin/env goo
+
+# ${NAME} - Goo program
+# Created on ${DATE}
+
+printf("Hello from ${NAME}!")
