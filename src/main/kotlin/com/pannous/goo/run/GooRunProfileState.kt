@@ -3,8 +3,9 @@ package com.pannous.goo.run
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.configurations.CommandLineState
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.process.ColoredProcessHandler
+import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessHandler
+import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.runners.ExecutionEnvironment
 import java.io.File
 
@@ -16,7 +17,7 @@ class GooRunProfileState(
     @Throws(ExecutionException::class)
     override fun startProcess(): ProcessHandler {
         val commandLine = createCommandLine()
-        return ColoredProcessHandler(commandLine)
+        return ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
     }
 
     private fun createCommandLine(): GeneralCommandLine {
@@ -31,6 +32,9 @@ class GooRunProfileState(
             File(configuration.filePath).parent 
         }
         commandLine.workDirectory = File(workingDir)
+        
+        // Add environment variables
+        commandLine.environment.putAll(System.getenv())
         
         return commandLine
     }
@@ -53,6 +57,12 @@ class GooRunProfileState(
         val projectBin = File(configuration.project.basePath, "bin/goo")
         if (projectBin.exists() && projectBin.canExecute()) {
             return projectBin.absolutePath
+        }
+
+        // Try local goo directory (our renamed binary)
+        val localGoo = File(configuration.project.basePath, "bin/go")
+        if (localGoo.exists() && localGoo.canExecute()) {
+            return localGoo.absolutePath
         }
 
         // Try system PATH
