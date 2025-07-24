@@ -103,6 +103,18 @@ class GooLexerAdapter : LexerBase() {
                 tokenEnd = currentOffset
                 currentToken = GooTokenTypes.NUMBER
             }
+
+            char == '{' -> {
+                currentOffset++
+                tokenEnd = currentOffset
+                currentToken = GooTokenTypes.LBRACE
+            }
+            char == '}' -> {
+                currentOffset++
+                tokenEnd = currentOffset
+                currentToken = GooTokenTypes.RBRACE
+            }
+            
             
             // Handle Goo-specific unicode operators
             char == '≠' -> {

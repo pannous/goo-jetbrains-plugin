@@ -7,4 +7,6 @@ object GooTokenTypes {
     val NUMBER = GooTokenType("NUMBER")
     val OPERATOR = GooTokenType("OPERATOR")
     val COMMENT = GooTokenType("COMMENT")
+    val LBRACE = GooTokenType("LBRACE")
+    val RBRACE = GooTokenType("RBRACE")
 }
