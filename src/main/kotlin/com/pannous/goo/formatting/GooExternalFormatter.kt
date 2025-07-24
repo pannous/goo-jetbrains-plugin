@@ -2,11 +2,12 @@ package com.pannous.goo.formatting
 
 import com.intellij.formatting.service.AsyncDocumentFormattingService
 import com.intellij.formatting.service.AsyncFormattingRequest
+import com.intellij.formatting.service.FormattingService
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
 import com.pannous.goo.psi.GooFile
 import java.io.File
-import java.util.concurrent.CompletableFuture
+import java.util.*
 
 class GooExternalFormatter : AsyncDocumentFormattingService() {
     
@@ -14,13 +15,20 @@ class GooExternalFormatter : AsyncDocumentFormattingService() {
         return file is GooFile
     }
     
+    override fun getFeatures(): Set<FormattingService.Feature> {
+        return EnumSet.of(FormattingService.Feature.FORMAT_FRAGMENTS)
+    }
+    
     override fun createFormattingTask(request: AsyncFormattingRequest): FormattingTask? {
-        val file = request.psiFile
+        val file = request.context.containingFile
         if (file !is GooFile) return null
         
         return object : FormattingTask {
-            override fun run(): String? {
-                return formatWithGofmt(file.text, file.project)
+            override fun run() {
+                val formattedText = formatWithGofmt(request.documentText, file.project)
+                if (formattedText != null && formattedText != request.documentText) {
+                    request.onTextReady(formattedText)
+                }
             }
             
             override fun cancel(): Boolean = false
