@@ -14,6 +14,7 @@ class GooRunner : ProgramRunner<RunnerSettings> {
     }
     
     override fun execute(environment: ExecutionEnvironment) {
-        // Default execution handled by the state
+        val state = environment.state ?: return
+        state.execute(environment.executor, this)
     }
 }
