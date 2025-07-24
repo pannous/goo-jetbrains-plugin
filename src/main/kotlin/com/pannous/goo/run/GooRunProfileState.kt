@@ -40,32 +40,31 @@ class GooRunProfileState(
     }
 
     private fun findGooBinary(): String {
-        // First try to find goo binary in the plugin's bundled resources
-        val pluginDir = System.getProperty("java.class.path")
-            .split(File.pathSeparator)
-            .find { it.contains("goo-intellij") }
-            ?.let { File(it).parentFile }
-        
-        pluginDir?.let { dir ->
-            val bundledBinary = File(dir, "bin/goo")
-            if (bundledBinary.exists() && bundledBinary.canExecute()) {
-                return bundledBinary.absolutePath
-            }
+        // 1. First priority: bundled goo binary in plugin resources
+        val bundledBinary = findBundledGooBinary()
+        if (bundledBinary != null) {
+            return bundledBinary
         }
 
-        // Try project's bin directory
+        // 2. Second priority: project's bin directory  
         val projectBin = File(configuration.project.basePath, "bin/goo")
         if (projectBin.exists() && projectBin.canExecute()) {
             return projectBin.absolutePath
         }
 
-        // Try local goo directory (our renamed binary)
+        // 3. Third priority: local goo directory (our renamed binary)
         val localGoo = File(configuration.project.basePath, "bin/go")
         if (localGoo.exists() && localGoo.canExecute()) {
             return localGoo.absolutePath
         }
 
-        // Try system PATH
+        // 4. Fourth priority: current directory goo binary
+        val currentDirGoo = File("./goo")
+        if (currentDirGoo.exists() && currentDirGoo.canExecute()) {
+            return currentDirGoo.absolutePath
+        }
+
+        // 5. Last resort: system PATH
         val pathDirs = System.getenv("PATH")?.split(File.pathSeparator) ?: emptyList()
         for (pathDir in pathDirs) {
             val gooBinary = File(pathDir, "goo")
@@ -75,5 +74,34 @@ class GooRunProfileState(
         }
 
         throw ExecutionException("Goo binary not found. Please ensure goo is installed and available in PATH or bundled with the plugin.")
+    }
+    
+    private fun findBundledGooBinary(): String? {
+        // Try multiple methods to find the bundled binary
+        val possibleLocations = listOf(
+            // Method 1: Look for plugin JAR in classpath
+            System.getProperty("java.class.path")
+                .split(File.pathSeparator)
+                .find { it.contains("goo") && it.endsWith(".jar") }
+                ?.let { File(it).parentFile }
+                ?.let { File(it, "goo") },
+                
+            // Method 2: Look relative to plugin directory
+            System.getProperty("java.class.path")
+                .split(File.pathSeparator)
+                .find { it.contains("plugins") && it.contains("goo") }
+                ?.let { File(it).parentFile }
+                ?.let { File(it, "goo") },
+                
+            // Method 3: Look in common plugin locations
+            File("/opt/other/goo-intellij/goo"),
+            File("./goo"),
+            File("../goo")
+        )
+        
+        return possibleLocations
+            .filterNotNull()
+            .find { it.exists() && it.canExecute() }
+            ?.absolutePath
     }
 }
