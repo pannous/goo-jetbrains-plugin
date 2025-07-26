@@ -58,6 +58,9 @@
         
         <!-- Formatter Support -->
         <lang.formatter language="Goo" implementationClass="com.pannous.goo.formatting.GooFormattingModelBuilder"/>
+        
+        <!-- Breakpoint Support -->
+        <xdebugger.breakpointType implementation="com.pannous.goo.debugger.GooLineBreakpointType"/>
     </extensions>
 
     <actions>
