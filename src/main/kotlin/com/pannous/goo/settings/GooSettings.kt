@@ -13,7 +13,8 @@ class GooSettings : PersistentStateComponent<GooSettings.State> {
     data class State(
         var compilerPath: String = "",
         var goRoot: String = "",
-        var enableCompilerIntegration: Boolean = true
+        var enableCompilerIntegration: Boolean = true,
+        var useBundledCompiler: Boolean = true
     )
     
     private var state = State()
@@ -29,23 +30,36 @@ class GooSettings : PersistentStateComponent<GooSettings.State> {
             return state.compilerPath
         }
         
-        // Try common locations
-        val possiblePaths = listOf(
-            "/opt/other/go/bin/go",
-            "/usr/local/go/bin/go", 
-            "/usr/local/goo/bin/go",
+        if (state.useBundledCompiler) {
+            // Try bundled/common locations first
+            val bundledPaths = listOf(
+                "/opt/other/go/bin/go",
+                "/usr/local/go/bin/go", 
+                "/usr/local/goo/bin/go"
+            )
+            
+            for (path in bundledPaths) {
+                if (java.io.File(path).exists()) {
+                    state.compilerPath = path
+                    return path
+                }
+            }
+        }
+        
+        // Fallback to PATH or user locations
+        val userPaths = listOf(
             System.getProperty("user.home") + "/go/bin/go",
             System.getProperty("user.home") + "/goo/bin/go"
         )
         
-        for (path in possiblePaths) {
+        for (path in userPaths) {
             if (java.io.File(path).exists()) {
                 state.compilerPath = path
                 return path
             }
         }
         
-        return "go" // Fallback to PATH
+        return "go" // Final fallback to PATH
     }
     
     fun getGoRoot(): String {
@@ -94,6 +108,14 @@ class GooSettings : PersistentStateComponent<GooSettings.State> {
     
     fun setCompilerIntegrationEnabled(enabled: Boolean) {
         state.enableCompilerIntegration = enabled
+    }
+    
+    fun isUsingBundledCompiler(): Boolean = state.useBundledCompiler
+    
+    fun setUseBundledCompiler(useBundled: Boolean) {
+        state.useBundledCompiler = useBundled
+        // Clear cached compiler path when switching modes
+        state.compilerPath = ""
     }
     
     companion object {

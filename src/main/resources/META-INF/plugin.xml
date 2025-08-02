@@ -57,7 +57,6 @@
         <lang.commenter language="Goo" implementationClass="com.pannous.goo.GooCommenter"/>
         
         <!-- Formatter Support -->
-        <lang.formatter language="Goo" implementationClass="com.pannous.goo.formatting.GooFormattingModelBuilder"/>
         <formattingService implementation="com.pannous.goo.formatting.GooExternalFormatter"/>
         
         <!-- Breakpoint Support -->

@@ -5,12 +5,35 @@ plugins {
 }
 
 group = "com.pannous"
-version = "1.2.1"
+
+// Auto-increment patch version for development builds
+val baseVersion = "1.2"
+val buildNumber = System.getenv("BUILD_NUMBER") ?: run {
+    // For local development, use git commit count as build number
+    try {
+        val gitCount = Runtime.getRuntime()
+            .exec("git rev-list --count HEAD")
+            .inputStream.bufferedReader().readText().trim()
+        gitCount.toIntOrNull()?.toString() ?: "0"
+    } catch (e: Exception) {
+        "0"
+    }
+}
+
+version = "$baseVersion.$buildNumber"
 
 repositories {
     mavenCentral()
     intellijPlatform {
         defaultRepositories()
+    }
+}
+
+// Suppress build warnings and verbose output
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    compilerOptions {
+        suppressWarnings.set(true)
+        freeCompilerArgs.add("-Xsuppress-version-warnings")
     }
 }
 
