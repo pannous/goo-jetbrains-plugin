@@ -12,9 +12,14 @@ import com.pannous.goo.lexer.GooTokenTypes
 class GooFormattingModelBuilder : FormattingModelBuilder {
     
     override fun createModel(formattingContext: FormattingContext): FormattingModel {
+        println("GooFormattingModelBuilder: createModel called!")
+        
         val element = formattingContext.psiElement
         val settings = formattingContext.codeStyleSettings
         val containingFile = formattingContext.containingFile
+        
+        // Force a simple change to test if this is being called
+        println("GooFormattingModelBuilder: File: ${containingFile.name}")
         
         return FormattingModelProvider.createFormattingModelForPsiFile(
             containingFile,

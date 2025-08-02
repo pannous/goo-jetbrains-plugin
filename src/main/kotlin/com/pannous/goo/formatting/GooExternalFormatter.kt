@@ -3,6 +3,8 @@ package com.pannous.goo.formatting
 import com.intellij.formatting.service.AsyncDocumentFormattingService
 import com.intellij.formatting.service.AsyncFormattingRequest
 import com.intellij.formatting.service.FormattingService
+import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
@@ -28,8 +30,15 @@ class GooExternalFormatter : AsyncDocumentFormattingService() {
     }
     
     override fun canFormat(file: PsiFile): Boolean {
-        val canFormat = file.language == GooLanguage && isFormatterAvailable(file.project)
-        println("GooExternalFormatter: canFormat called for ${file.name}, result: $canFormat")
+        val languageCheck = file.language == GooLanguage
+        val formatterAvailable = isFormatterAvailable(file.project)
+        val canFormat = languageCheck && formatterAvailable
+        
+        println("GooExternalFormatter: canFormat called for ${file.name}")
+        println("GooExternalFormatter: Language is Goo: $languageCheck (${file.language})")
+        println("GooExternalFormatter: Formatter available: $formatterAvailable")
+        println("GooExternalFormatter: Final result: $canFormat")
+        
         return canFormat
     }
     
@@ -88,24 +97,8 @@ class GooExternalFormatter : AsyncDocumentFormattingService() {
         val compilerPath = settings.getCompilerPath()
         val goRoot = settings.getGoRoot()
         
-        // Get gofmt path based on bundled compiler setting
-        val gofmtPath = if (settings.isUsingBundledCompiler()) {
-            // Use gofmt from the same directory as the bundled compiler
-            if (compilerPath.endsWith("/bin/go")) {
-                compilerPath.replace("/bin/go", "/bin/gofmt")
-            } else {
-                // Try bundled locations directly
-                val bundledPaths = listOf(
-                    "/opt/other/go/bin/gofmt",
-                    "/usr/local/go/bin/gofmt",
-                    "/usr/local/goo/bin/gofmt"
-                )
-                bundledPaths.find { java.io.File(it).exists() } ?: "gofmt"
-            }
-        } else {
-            // Use system gofmt from PATH
-            "gofmt"
-        }
+        // Get gofmt path - force bundled for now to test
+        val gofmtPath = "/opt/other/go/bin/gofmt"
         
         return try {
             // Create temporary file with .goo extension so gofmt knows it's Goo syntax
@@ -181,7 +174,10 @@ class GooExternalFormatter : AsyncDocumentFormattingService() {
     private fun isFormatterAvailable(project: Project): Boolean {
         val settings = GooSettings.getInstance(project)
         
+        println("GooExternalFormatter: Checking formatter availability...")
+        
         if (!settings.isCompilerIntegrationEnabled()) {
+            println("GooExternalFormatter: Compiler integration disabled")
             return false
         }
         
@@ -189,21 +185,16 @@ class GooExternalFormatter : AsyncDocumentFormattingService() {
             val compilerPath = settings.getCompilerPath()
             val goRoot = settings.getGoRoot()
             
-            // Check if gofmt is available - use same logic as formatter
-            val gofmtPath = if (settings.isUsingBundledCompiler()) {
-                if (compilerPath.endsWith("/bin/go")) {
-                    compilerPath.replace("/bin/go", "/bin/gofmt")
-                } else {
-                    val bundledPaths = listOf(
-                        "/opt/other/go/bin/gofmt",
-                        "/usr/local/go/bin/gofmt",
-                        "/usr/local/goo/bin/gofmt"
-                    )
-                    bundledPaths.find { java.io.File(it).exists() } ?: "gofmt"
-                }
-            } else {
-                "gofmt"
-            }
+            println("GooExternalFormatter: Compiler path: $compilerPath")
+            println("GooExternalFormatter: GOROOT: $goRoot")
+            
+            // Check if gofmt is available - force bundled path for now
+            val gofmtPath = "/opt/other/go/bin/gofmt"
+            
+            println("GooExternalFormatter: Using bundled compiler: ${settings.isUsingBundledCompiler()}")
+            println("GooExternalFormatter: File exists at bundled path: ${java.io.File(gofmtPath).exists()}")
+            
+            println("GooExternalFormatter: gofmt path: $gofmtPath")
             
             val processBuilder = ProcessBuilder().apply {
                 command(listOf(gofmtPath, "-h"))
@@ -211,9 +202,14 @@ class GooExternalFormatter : AsyncDocumentFormattingService() {
             }
             
             val process = processBuilder.start()
-            val success = process.waitFor(5, TimeUnit.SECONDS) && process.exitValue() == 2 // gofmt -h exits with 2
+            val exitCode = if (process.waitFor(5, TimeUnit.SECONDS)) process.exitValue() else -1
+            val success = exitCode == 0 // gofmt -h exits with 0
+            
+            println("GooExternalFormatter: gofmt exit code: $exitCode")
+            println("GooExternalFormatter: gofmt test result: $success")
             success
         } catch (e: Exception) {
+            println("GooExternalFormatter: Exception checking formatter: ${e.message}")
             false
         }
     }
