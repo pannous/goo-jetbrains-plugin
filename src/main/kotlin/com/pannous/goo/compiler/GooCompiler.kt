@@ -2,6 +2,7 @@ package com.pannous.goo.compiler
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.pannous.goo.settings.GooSettings
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -12,8 +13,9 @@ import java.util.concurrent.TimeUnit
  */
 class GooCompiler(private val project: Project) {
     
-    private val compilerPath = "/opt/other/go/bin/go"
-    private val goRoot = "/opt/other/go"
+    private val settings = GooSettings.getInstance(project)
+    private val compilerPath get() = settings.getCompilerPath()
+    private val goRoot get() = settings.getGoRoot()
     
     data class CompilerResult(
         val success: Boolean,
@@ -116,6 +118,11 @@ class GooCompiler(private val project: Project) {
      * Check if the Goo compiler is available and working
      */
     fun isCompilerAvailable(): Boolean {
+        // Check if compiler integration is enabled
+        if (!settings.isCompilerIntegrationEnabled()) {
+            return false
+        }
+        
         return try {
             val result = runCompiler(listOf("version"))
             result.success

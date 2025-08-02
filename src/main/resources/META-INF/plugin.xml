@@ -67,6 +67,12 @@
         
         <!-- Compiler Service -->
         <projectService serviceImplementation="com.pannous.goo.services.GooCompilerService"/>
+        
+        <!-- Settings -->
+        <projectService serviceImplementation="com.pannous.goo.settings.GooSettings"/>
+        <projectConfigurable instance="com.pannous.goo.settings.GooConfigurable" 
+                           displayName="Goo Compiler" 
+                           groupId="language"/>
     </extensions>
 
     <actions>
