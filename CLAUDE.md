@@ -86,3 +86,7 @@ The plugin supports Goo syntax extensions over Go:
 - `gradle runIde` task fails - use manual plugin installation instead
 - Always restart GoLand completely for plugin.xml or structural changes
 - Use disable/enable in Plugin Manager for quick code-only changes
+
+## Reminders and Checklists
+
+- Remember to look at this checklist whenever

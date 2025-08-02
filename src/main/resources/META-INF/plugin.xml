@@ -61,6 +61,12 @@
         
         <!-- Breakpoint Support -->
         <xdebugger.breakpointType implementation="com.pannous.goo.debugger.GooLineBreakpointType"/>
+        
+        <!-- Error Annotator -->
+        <annotator language="Goo" implementationClass="com.pannous.goo.annotator.GooAnnotator"/>
+        
+        <!-- Compiler Service -->
+        <projectService serviceImplementation="com.pannous.goo.services.GooCompilerService"/>
     </extensions>
 
     <actions>

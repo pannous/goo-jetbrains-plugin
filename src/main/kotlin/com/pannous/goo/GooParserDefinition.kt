@@ -12,7 +12,7 @@ import com.intellij.psi.tree.IFileElementType
 import com.intellij.psi.tree.TokenSet
 import com.pannous.goo.lexer.GooLexer
 import com.pannous.goo.lexer.GooTokenTypes
-import com.pannous.goo.parser.GooParser
+import com.pannous.goo.parser.GooEnhancedParser
 import com.pannous.goo.psi.GooFile
 
 class GooParserDefinition : ParserDefinition {
@@ -23,7 +23,7 @@ class GooParserDefinition : ParserDefinition {
     
     override fun createLexer(project: Project?): Lexer = GooLexer()
     
-    override fun createParser(project: Project?): PsiParser = GooParser()
+    override fun createParser(project: Project?): PsiParser = GooEnhancedParser()
     
     override fun getFileNodeType(): IFileElementType = FILE
     
