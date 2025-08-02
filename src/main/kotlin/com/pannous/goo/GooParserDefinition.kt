@@ -32,7 +32,8 @@ class GooParserDefinition : ParserDefinition {
     override fun getStringLiteralElements(): TokenSet = TokenSet.create(GooTokenTypes.STRING)
     
     override fun createElement(node: ASTNode?): PsiElement {
-        throw AssertionError("createElement should never be called for PsiFile nodes")
+        // Return a generic PsiElement for non-file nodes
+        return node?.psi ?: throw IllegalArgumentException("ASTNode cannot be null")
     }
     
     override fun createFile(viewProvider: FileViewProvider): PsiFile = GooFile(viewProvider)
