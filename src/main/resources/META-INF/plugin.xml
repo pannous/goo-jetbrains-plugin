@@ -74,6 +74,36 @@
         <projectConfigurable instance="com.pannous.goo.settings.GooConfigurable" 
                            displayName="Goo Compiler" 
                            groupId="language"/>
+        
+        <!-- Intentions -->
+        <intentionAction>
+            <className>com.pannous.goo.intentions.SimplifyErrorHandlingIntention</className>
+            <category>Goo</category>
+        </intentionAction>
+        <intentionAction>
+            <className>com.pannous.goo.intentions.SimplifyFunctionReturnIntention</className>
+            <category>Goo</category>
+        </intentionAction>
+        <intentionAction>
+            <className>com.pannous.goo.intentions.UseMapLiteralIntention</className>
+            <category>Goo</category>
+        </intentionAction>
+        <intentionAction>
+            <className>com.pannous.goo.intentions.UseSliceLiteralIntention</className>
+            <category>Goo</category>
+        </intentionAction>
+        <intentionAction>
+            <className>com.pannous.goo.intentions.UseLambdaSyntaxIntention</className>
+            <category>Goo</category>
+        </intentionAction>
+        <intentionAction>
+            <className>com.pannous.goo.intentions.UseForLoopIntention</className>
+            <category>Goo</category>
+        </intentionAction>
+        <intentionAction>
+            <className>com.pannous.goo.intentions.UseWhileLoopIntention</className>
+            <category>Goo</category>
+        </intentionAction>
     </extensions>
 
     <actions>

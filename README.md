@@ -27,3 +27,11 @@ Goo is an extension of Go with the following modifications:
 ☐ no Main needed  
 
 ☐ any other pain points you and I might have  
+
+
+Intents:
+☒ Simplify error handling (if err := f(); err != nil { return err } → try f())
+☒ Simplify function return (remove explicit return for single expressions)
+☒ Use map literal (map[string]int{"a": 1} → {a: 1})
+☒ Use slice literal ([]int{1,2,3} → [1,2,3])
+☒ Use lambda syntax (convert anonymous functions to x => x * 2)

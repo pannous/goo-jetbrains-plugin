@@ -20,7 +20,7 @@ class GooCompletionContributor : CompletionContributor() {
 class GooKeywordCompletionProvider : CompletionProvider<CompletionParameters>() {
     
     private val gooKeywords = listOf(
-        "and", "or", "not", "ø", "printf", "check", "typeof", "def", "void"
+        "and", "or", "not", "ø", "printf", "check", "typeof", "def", "void", "while", "try"
     )
     
     override fun addCompletions(
