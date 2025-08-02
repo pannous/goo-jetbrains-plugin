@@ -32,8 +32,9 @@ class GooParserDefinition : ParserDefinition {
     override fun getStringLiteralElements(): TokenSet = TokenSet.create(GooTokenTypes.STRING)
     
     override fun createElement(node: ASTNode?): PsiElement {
-        // Return a generic PsiElement for non-file nodes
-        return node?.psi ?: throw IllegalArgumentException("ASTNode cannot be null")
+        // Create a simple leaf element to avoid recursion
+        node ?: throw IllegalArgumentException("ASTNode cannot be null")
+        return com.intellij.psi.impl.source.tree.LeafPsiElement(node.elementType, node.text)
     }
     
     override fun createFile(viewProvider: FileViewProvider): PsiFile = GooFile(viewProvider)

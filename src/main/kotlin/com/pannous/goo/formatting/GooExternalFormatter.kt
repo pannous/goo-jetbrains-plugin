@@ -3,11 +3,8 @@ package com.pannous.goo.formatting
 import com.intellij.formatting.service.AsyncDocumentFormattingService
 import com.intellij.formatting.service.AsyncFormattingRequest
 import com.intellij.formatting.service.FormattingService
-import com.intellij.notification.NotificationGroupManager
-import com.intellij.notification.NotificationType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.pannous.goo.GooLanguage
 import com.pannous.goo.settings.GooSettings
@@ -30,16 +27,7 @@ class GooExternalFormatter : AsyncDocumentFormattingService() {
     }
     
     override fun canFormat(file: PsiFile): Boolean {
-        val languageCheck = file.language == GooLanguage
-        val formatterAvailable = isFormatterAvailable(file.project)
-        val canFormat = languageCheck && formatterAvailable
-        
-        println("GooExternalFormatter: canFormat called for ${file.name}")
-        println("GooExternalFormatter: Language is Goo: $languageCheck (${file.language})")
-        println("GooExternalFormatter: Formatter available: $formatterAvailable")
-        println("GooExternalFormatter: Final result: $canFormat")
-        
-        return canFormat
+        return file.language == GooLanguage && isFormatterAvailable(file.project)
     }
     
     override fun createFormattingTask(request: AsyncFormattingRequest): FormattingTask? {
@@ -51,25 +39,16 @@ class GooExternalFormatter : AsyncDocumentFormattingService() {
         return object : FormattingTask {
             override fun run() {
                 try {
-                    println("GooExternalFormatter: Starting format task")
-                    println("GooExternalFormatter: Input text length: ${request.documentText.length}")
-                    
                     val formattedText = formatGooCode(
                         request.documentText,
                         project,
                         request.formattingRanges
                     )
                     
-                    println("GooExternalFormatter: Formatted text length: ${formattedText?.length ?: "null"}")
-                    println("GooExternalFormatter: Text changed: ${formattedText != null && formattedText != request.documentText}")
-                    
                     if (formattedText != null && formattedText != request.documentText) {
                         request.onTextReady(formattedText)
-                    } else {
-                        println("GooExternalFormatter: No changes made or formatting failed")
                     }
                 } catch (e: Exception) {
-                    println("GooExternalFormatter: Error - ${e.message}")
                     request.onError("Goo formatting failed", e.message ?: "Unknown error")
                 }
             }
@@ -97,8 +76,24 @@ class GooExternalFormatter : AsyncDocumentFormattingService() {
         val compilerPath = settings.getCompilerPath()
         val goRoot = settings.getGoRoot()
         
-        // Get gofmt path - force bundled for now to test
-        val gofmtPath = "/opt/other/go/bin/gofmt"
+        // Get gofmt path based on bundled compiler setting
+        val gofmtPath = if (settings.isUsingBundledCompiler()) {
+            // Use gofmt from the same directory as the bundled compiler
+            if (compilerPath.endsWith("/bin/go")) {
+                compilerPath.replace("/bin/go", "/bin/gofmt")
+            } else {
+                // Try bundled locations directly
+                val bundledPaths = listOf(
+                    "/opt/other/go/bin/gofmt",
+                    "/usr/local/go/bin/gofmt",
+                    "/usr/local/goo/bin/gofmt"
+                )
+                bundledPaths.find { java.io.File(it).exists() } ?: "gofmt"
+            }
+        } else {
+            // Use system gofmt from PATH
+            "gofmt"
+        }
         
         return try {
             // Create temporary file with .goo extension so gofmt knows it's Goo syntax
@@ -122,48 +117,22 @@ class GooExternalFormatter : AsyncDocumentFormattingService() {
             
             val success = process.waitFor(30, TimeUnit.SECONDS) && process.exitValue() == 0
             
-            println("GooExternalFormatter: Process success: $success, exit code: ${if (process.isAlive) "still running" else process.exitValue()}")
-            println("GooExternalFormatter: Formatted output length: ${formattedOutput.length}")
-            println("GooExternalFormatter: Error output: '$errorOutput'")
-            
-            if (success) {
-                if (formattedOutput.isNotEmpty()) {
-                    // Normalize line endings for comparison
-                    val normalizedInput = text.replace("\r\n", "\n").replace("\r", "\n")
-                    val normalizedOutput = formattedOutput.replace("\r\n", "\n").replace("\r", "\n")
-                    
-                    println("GooExternalFormatter: Input length: ${normalizedInput.length}")
-                    println("GooExternalFormatter: Output length: ${normalizedOutput.length}")
-                    println("GooExternalFormatter: Are equal: ${normalizedInput == normalizedOutput}")
-                    
-                    // Debug: show first 200 chars of each
-                    println("GooExternalFormatter: Input preview: '${normalizedInput.take(200)}'")
-                    println("GooExternalFormatter: Output preview: '${normalizedOutput.take(200)}'")
-                    
-                    if (normalizedOutput != normalizedInput) {
-                        println("GooExternalFormatter: Returning formatted text")
-                        formattedOutput
-                    } else {
-                        println("GooExternalFormatter: No changes detected - FORCING a change for testing")
-                        // Force a change by adding a comment to test if formatter is working
-                        "$formattedOutput\n// Formatted by Goo"
-                    }
+            if (success && formattedOutput.isNotEmpty()) {
+                // Normalize line endings for comparison
+                val normalizedInput = text.replace("\r\n", "\n").replace("\r", "\n")
+                val normalizedOutput = formattedOutput.replace("\r\n", "\n").replace("\r", "\n")
+                
+                if (normalizedOutput != normalizedInput) {
+                    formattedOutput
                 } else {
-                    println("GooExternalFormatter: Empty output")
-                    null
+                    null // No changes made
                 }
             } else {
-                // If formatter fails, log error but don't block
-                if (errorOutput.isNotEmpty()) {
-                    println("Goo formatter error: $errorOutput")
-                }
-                null
+                null // Formatting failed or empty output
             }
         } catch (e: IOException) {
-            println("Goo formatter error: ${e.message}")
             null
         } catch (e: InterruptedException) {
-            println("Goo formatter timeout")
             null
         }
     }
@@ -174,10 +143,7 @@ class GooExternalFormatter : AsyncDocumentFormattingService() {
     private fun isFormatterAvailable(project: Project): Boolean {
         val settings = GooSettings.getInstance(project)
         
-        println("GooExternalFormatter: Checking formatter availability...")
-        
         if (!settings.isCompilerIntegrationEnabled()) {
-            println("GooExternalFormatter: Compiler integration disabled")
             return false
         }
         
@@ -185,16 +151,21 @@ class GooExternalFormatter : AsyncDocumentFormattingService() {
             val compilerPath = settings.getCompilerPath()
             val goRoot = settings.getGoRoot()
             
-            println("GooExternalFormatter: Compiler path: $compilerPath")
-            println("GooExternalFormatter: GOROOT: $goRoot")
-            
-            // Check if gofmt is available - force bundled path for now
-            val gofmtPath = "/opt/other/go/bin/gofmt"
-            
-            println("GooExternalFormatter: Using bundled compiler: ${settings.isUsingBundledCompiler()}")
-            println("GooExternalFormatter: File exists at bundled path: ${java.io.File(gofmtPath).exists()}")
-            
-            println("GooExternalFormatter: gofmt path: $gofmtPath")
+            // Check if gofmt is available - use same logic as formatter
+            val gofmtPath = if (settings.isUsingBundledCompiler()) {
+                if (compilerPath.endsWith("/bin/go")) {
+                    compilerPath.replace("/bin/go", "/bin/gofmt")
+                } else {
+                    val bundledPaths = listOf(
+                        "/opt/other/go/bin/gofmt",
+                        "/usr/local/go/bin/gofmt",
+                        "/usr/local/goo/bin/gofmt"
+                    )
+                    bundledPaths.find { java.io.File(it).exists() } ?: "gofmt"
+                }
+            } else {
+                "gofmt"
+            }
             
             val processBuilder = ProcessBuilder().apply {
                 command(listOf(gofmtPath, "-h"))
@@ -203,13 +174,8 @@ class GooExternalFormatter : AsyncDocumentFormattingService() {
             
             val process = processBuilder.start()
             val exitCode = if (process.waitFor(5, TimeUnit.SECONDS)) process.exitValue() else -1
-            val success = exitCode == 0 // gofmt -h exits with 0
-            
-            println("GooExternalFormatter: gofmt exit code: $exitCode")
-            println("GooExternalFormatter: gofmt test result: $success")
-            success
+            exitCode == 0
         } catch (e: Exception) {
-            println("GooExternalFormatter: Exception checking formatter: ${e.message}")
             false
         }
     }
