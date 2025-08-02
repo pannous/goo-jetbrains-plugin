@@ -95,6 +95,23 @@ class GooLexerAdapter : LexerBase() {
                 currentToken = GooTokenTypes.STRING
             }
             
+            // Handle character literals (single quotes)
+            char == '\'' -> {
+                currentOffset++ // Skip opening quote
+                while (currentOffset < endOffset && buffer[currentOffset] != '\'') {
+                    if (buffer[currentOffset] == '\\' && currentOffset + 1 < endOffset) {
+                        currentOffset += 2 // Skip escaped character
+                    } else {
+                        currentOffset++
+                    }
+                }
+                if (currentOffset < endOffset) {
+                    currentOffset++ // Skip closing quote
+                }
+                tokenEnd = currentOffset
+                currentToken = GooTokenTypes.STRING
+            }
+            
             // Handle numbers
             char.isDigit() -> {
                 while (currentOffset < endOffset && (buffer[currentOffset].isDigit() || buffer[currentOffset] == '.')) {
@@ -124,12 +141,12 @@ class GooLexerAdapter : LexerBase() {
             }
             
             // Handle operators and punctuation (excluding / which is handled above for // comments)
-            char in "(){}[],:;=<>!&|+-*%." -> {
+            char in "(){}[],:;=<>!&|+-*%.?" -> {
                 // Handle multi-character operators
                 if (currentOffset + 1 < endOffset) {
                     val twoChar = buffer.substring(currentOffset, currentOffset + 2)
                     when (twoChar) {
-                        "==", "!=", "<=", ">=", "&&", "||", ":=" -> {
+                        "==", "!=", "<=", ">=", "&&", "||", ":=", "=>", "?." -> {
                             currentOffset += 2
                             tokenEnd = currentOffset
                             currentToken = GooTokenTypes.OPERATOR
@@ -154,7 +171,8 @@ class GooLexerAdapter : LexerBase() {
                 currentToken = when (text) {
                     "and", "or", "not", "def", "void", "func", "if", "else", "for", "while", 
                     "return", "break", "continue", "package", "import", "var", "const",
-                    "printf", "check", "typeof" -> GooTokenTypes.KEYWORD
+                    "printf", "check", "typeof", "class", "enum", "try", "catch", "put",
+                    "in", "is", "apply" -> GooTokenTypes.KEYWORD
                     else -> GooTokenTypes.IDENTIFIER
                 }
             }
