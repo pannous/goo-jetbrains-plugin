@@ -45,8 +45,8 @@ class GooLexerAdapter : LexerBase() {
             
             // Handle comments starting with # (only when preceded by whitespace or at start of line)
             char == '#' -> {
-                val prevChar = if (tokenStart > 0) buffer[tokenStart - 1] else ' '
-                if (prevChar.isWhitespace() || tokenStart == 0) {
+                val prevChar = if (tokenStart > startOffset) buffer[tokenStart - 1] else ' '
+                if (prevChar.isWhitespace() || tokenStart == startOffset) {
                     // It's a comment - consume until end of line
                     while (currentOffset < endOffset && buffer[currentOffset] != '\n') {
                         currentOffset++

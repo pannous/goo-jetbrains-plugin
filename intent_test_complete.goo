@@ -1,0 +1,79 @@
+// Complete test file for ALL Goo intentions!
+
+func main() {
+    // === BASIC INTENTS ===
+    
+    // 1. SimplifyErrorHandlingIntention
+    if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
+        return err
+    }
+    
+    // 2. SimplifyFunctionReturnIntention  
+    func add(x int, y int) int {
+        return x + y
+    }
+    
+    // 3. UseMapLiteralIntention
+    m := map[string]int{"hello": 1, "world": 2}
+    
+    // 4. UseSliceLiteralIntention
+    nums := []int{1, 2, 3, 4, 5}
+    
+    // 5. UseLambdaSyntaxIntention
+    transform := func(x int) int {
+        return x * 2
+    }
+    
+    // 6. UseWhileLoopIntention / UseForLoopIntention
+    for condition {
+        break
+    }
+    while condition {
+        break
+    }
+    
+    // === STRING METHOD INTENTS ===
+    
+    s := "hello world"
+    
+    // 7. SimplifyRangeLoopIntention
+    for i, x := range nums {
+        printf("%d: %d", i, x)
+    }
+    
+    // 8. UseStringMethodsIntention
+    upper := strings.ToUpper(s)
+    lower := strings.ToLower(s) 
+    title := strings.Title(s)
+    contains := strings.Contains(s, "hello")
+    hasPrefix := strings.HasPrefix(s, "he")
+    hasSuffix := strings.HasSuffix(s, "ld")
+    index := strings.Index(s, "o")
+    replaced := strings.Replace(s, "hello", "hi", -1)
+    trimmed := strings.TrimSpace(s)
+    parts := strings.Split(s, " ")
+    length := len(s)
+    num := strconv.Atoi("42")
+    fl := strconv.ParseFloat("42.5", 64)
+    
+    // 9. UseStringSlicingIntention
+    from1 := s[1:]
+    to3 := s[:3]
+    sub := s[1:4]
+    
+    // 10. UseStringAccessIntention
+    first := s[0]
+    last := s[len(s)-1]
+    size := len(s)
+    runes := []rune(s)
+    bytes := []byte(s)
+    
+    // 11. UseStringCaseIntention  
+    upperCase := strings.ToUpper(s)
+    lowerCase := strings.ToLower(s)
+    titleCase := strings.Title(s)
+    unicodeUpper := unicode.ToUpper('a')
+    unicodeLower := unicode.ToLower('A')
+    
+    printf("All %d intentions tested!", 11)
+}

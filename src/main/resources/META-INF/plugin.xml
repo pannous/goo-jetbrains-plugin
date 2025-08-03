@@ -66,6 +66,10 @@
         <!-- Error Annotator -->
         <annotator language="Goo" implementationClass="com.pannous.goo.annotator.GooAnnotator"/>
         
+        <!-- Refactoring Support -->
+        <lang.refactoringSupport language="Goo"
+                                implementationClass="com.pannous.goo.refactoring.GooRefactoringSupportProvider"/>
+        
         <!-- Compiler Service -->
         <projectService serviceImplementation="com.pannous.goo.services.GooCompilerService"/>
         
@@ -102,6 +106,28 @@
         </intentionAction>
         <intentionAction>
             <className>com.pannous.goo.intentions.UseWhileLoopIntention</className>
+            <category>Goo</category>
+        </intentionAction>
+        
+        <!-- String and Loop Simplification Intents -->
+        <intentionAction>
+            <className>com.pannous.goo.intentions.SimplifyRangeLoopIntention</className>
+            <category>Goo</category>
+        </intentionAction>
+        <intentionAction>
+            <className>com.pannous.goo.intentions.UseStringMethodsIntention</className>
+            <category>Goo</category>
+        </intentionAction>
+        <intentionAction>
+            <className>com.pannous.goo.intentions.UseStringSlicingIntention</className>
+            <category>Goo</category>
+        </intentionAction>
+        <intentionAction>
+            <className>com.pannous.goo.intentions.UseStringAccessIntention</className>
+            <category>Goo</category>
+        </intentionAction>
+        <intentionAction>
+            <className>com.pannous.goo.intentions.UseStringCaseIntention</className>
             <category>Goo</category>
         </intentionAction>
     </extensions>

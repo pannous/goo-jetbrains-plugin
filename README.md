@@ -35,3 +35,5 @@ Intents:
 ☒ Use map literal (map[string]int{"a": 1} → {a: 1})
 ☒ Use slice literal ([]int{1,2,3} → [1,2,3])
 ☒ Use lambda syntax (convert anonymous functions to x => x * 2)
+☒ Use for <-> while
+	

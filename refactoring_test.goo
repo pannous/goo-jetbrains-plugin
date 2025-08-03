@@ -1,0 +1,32 @@
+// Test file for Goo "Introduce Variable" refactoring!
+
+func main() {
+    // Test 1: String literals - select "hello world" and press Ctrl+Alt+V
+    printf("The message is: %s", "hello world")
+    
+    // Test 2: String methods - select "hello".toUpper() and introduce variable
+    check "hello".toUpper() == "HELLO"
+    
+    // Test 3: Mathematical expressions - select 42 + 13 and introduce variable
+    result := 42 + 13
+    check result == 55
+    
+    // Test 4: String operations - select s.replace("l", "x") and introduce variable
+    s := "hello"
+    replaced := s.replace("l", "x")
+    check replaced == "hexxo"
+    
+    // Test 5: Array access - select nums[0] and introduce variable
+    nums := [1, 2, 3]
+    first := nums[0]
+    check first == 1
+    
+    // Test 6: Try operations - select try someFunction() and introduce variable
+    // result := try someFunction()
+    
+    // Test 7: Complex expressions - select "hello".length() + "world".length()
+    totalLength := "hello".length() + "world".length()
+    check totalLength == 10
+    
+    printf("Refactoring test completed!")
+}
