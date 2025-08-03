@@ -3,189 +3,232 @@ package com.pannous.goo.parser
 import com.intellij.lang.ASTNode
 import com.intellij.lang.PsiBuilder
 import com.intellij.lang.PsiParser
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.psi.tree.IElementType
-import com.pannous.goo.compiler.GooCompiler
 import com.pannous.goo.lexer.GooTokenTypes
+import com.pannous.goo.psi.GooElementTypes
 
-/**
- * Enhanced parser that leverages the Goo compiler for better syntax understanding.
- * Falls back to simple parsing if compiler integration fails.
- */
 class GooEnhancedParser : PsiParser {
     
     override fun parse(root: IElementType, builder: PsiBuilder): ASTNode {
         val rootMarker = builder.mark()
         
-        // Try to use compiler-assisted parsing in background
-        if (shouldUseCompilerAssistedParsing(builder)) {
-            parseWithCompilerAssistance(builder)
-        } else {
-            // Fallback to basic parsing
-            parseBasic(builder)
-        }
+        parseFile(builder)
         
         rootMarker.done(root)
         return builder.treeBuilt
     }
     
-    /**
-     * Determine if we should attempt compiler-assisted parsing
-     */
-    private fun shouldUseCompilerAssistedParsing(builder: PsiBuilder): Boolean {
-        // Only use compiler assistance in read-action context and not during indexing
-        return !ApplicationManager.getApplication().isUnitTestMode &&
-               !ApplicationManager.getApplication().isHeadlessEnvironment
-    }
-    
-    /**
-     * Parse using compiler feedback for better structure understanding
-     */
-    private fun parseWithCompilerAssistance(builder: PsiBuilder) {
-        // For now, implement basic parsing with token-level improvements
-        // In the future, this could use compiler AST output for structure
-        parseWithTokenRecognition(builder)
-    }
-    
-    /**
-     * Enhanced parsing that recognizes Goo-specific constructs
-     */
-    private fun parseWithTokenRecognition(builder: PsiBuilder) {
+    private fun parseFile(builder: PsiBuilder) {
         while (!builder.eof()) {
-            when (builder.tokenType) {
-                GooTokenTypes.KEYWORD -> {
-                    val keywordText = builder.tokenText
-                    when (keywordText) {
-                        "def", "func" -> parseFunctionDefinition(builder)
-                        "class" -> parseClassDefinition(builder)
-                        "enum" -> parseEnumDefinition(builder)
-                        "try" -> parseTryBlock(builder)
-                        "if" -> parseIfStatement(builder)
-                        else -> builder.advanceLexer()
-                    }
+            when {
+                // Skip whitespace and comments
+                builder.tokenType?.toString() == "WHITE_SPACE" -> builder.advanceLexer()
+                builder.tokenType == GooTokenTypes.COMMENT -> parseComment(builder)
+                
+                // Parse statements
+                isAtFunction(builder) -> parseFunction(builder)
+                isAtVariableDeclaration(builder) -> parseVariableDeclaration(builder)
+                isAtAssignment(builder) -> parseAssignment(builder)
+                
+                // Parse other statements
+                else -> parseStatement(builder)
+            }
+        }
+    }
+    
+    private fun parseComment(builder: PsiBuilder) {
+        val marker = builder.mark()
+        builder.advanceLexer()
+        marker.done(GooElementTypes.COMMENT)
+    }
+    
+    private fun isAtFunction(builder: PsiBuilder): Boolean {
+        val text = builder.tokenText
+        return text == "func" || text == "def"
+    }
+    
+    private fun parseFunction(builder: PsiBuilder) {
+        val marker = builder.mark()
+        
+        // func/def keyword
+        builder.advanceLexer()
+        
+        // function name
+        if (builder.tokenType == GooTokenTypes.IDENTIFIER) {
+            builder.advanceLexer()
+        }
+        
+        // parameters (everything until {)
+        while (!builder.eof() && builder.tokenText != "{") {
+            builder.advanceLexer()
+        }
+        
+        // body (everything until matching })
+        if (builder.tokenText == "{") {
+            parseBlock(builder)
+        }
+        
+        marker.done(GooElementTypes.FUNCTION_DECLARATION)
+    }
+    
+    private fun isAtVariableDeclaration(builder: PsiBuilder): Boolean {
+        // Look ahead for ":=" pattern
+        val mark = builder.mark()
+        var foundIdentifier = false
+        var foundAssignment = false
+        
+        while (!builder.eof() && !foundAssignment) {
+            when {
+                builder.tokenType == GooTokenTypes.IDENTIFIER && !foundIdentifier -> {
+                    foundIdentifier = true
+                    builder.advanceLexer()
                 }
-                GooTokenTypes.OPERATOR -> {
-                    val operatorText = builder.tokenText
-                    when (operatorText) {
-                        "=>" -> parseLambdaExpression(builder)
-                        else -> builder.advanceLexer()
-                    }
+                builder.tokenText == ":=" -> {
+                    foundAssignment = true
                 }
+                builder.tokenText?.contains("\n") == true -> break
                 else -> builder.advanceLexer()
             }
         }
+        
+        mark.rollbackTo()
+        return foundIdentifier && foundAssignment
     }
     
-    /**
-     * Basic fallback parsing - accepts any token sequence
-     */
-    private fun parseBasic(builder: PsiBuilder) {
+    private fun parseVariableDeclaration(builder: PsiBuilder) {
+        val marker = builder.mark()
+        
+        // variable name
+        if (builder.tokenType == GooTokenTypes.IDENTIFIER) {
+            builder.advanceLexer()
+        }
+        
+        // skip whitespace
+        while (builder.tokenText?.isBlank() == true) {
+            builder.advanceLexer()
+        }
+        
+        // := operator
+        if (builder.tokenText == ":=") {
+            builder.advanceLexer()
+        }
+        
+        // value expression (until newline or specific terminators)
         while (!builder.eof()) {
-            builder.advanceLexer()
-        }
-    }
-    
-    /**
-     * Parse function definition (def/func keyword)
-     */
-    private fun parseFunctionDefinition(builder: PsiBuilder) {
-        val marker = builder.mark()
-        builder.advanceLexer() // consume 'def' or 'func'
-        
-        // Skip to next meaningful token or end of statement
-        while (!builder.eof() && builder.tokenText != "{" && builder.tokenText != "\n") {
-            builder.advanceLexer()
-        }
-        
-        marker.done(GooTokenTypes.KEYWORD) // Mark as function definition
-    }
-    
-    /**
-     * Parse class definition
-     */
-    private fun parseClassDefinition(builder: PsiBuilder) {
-        val marker = builder.mark()
-        builder.advanceLexer() // consume 'class'
-        
-        // Skip to opening brace or end of line
-        while (!builder.eof() && builder.tokenText != "{" && builder.tokenText != "\n") {
-            builder.advanceLexer()
-        }
-        
-        marker.done(GooTokenTypes.KEYWORD) // Mark as class definition
-    }
-    
-    /**
-     * Parse enum definition
-     */
-    private fun parseEnumDefinition(builder: PsiBuilder) {
-        val marker = builder.mark()
-        builder.advanceLexer() // consume 'enum'
-        
-        // Skip to opening brace or end of line
-        while (!builder.eof() && builder.tokenText != "{" && builder.tokenText != "\n") {
-            builder.advanceLexer()
-        }
-        
-        marker.done(GooTokenTypes.KEYWORD) // Mark as enum definition
-    }
-    
-    /**
-     * Parse try-catch block
-     */
-    private fun parseTryBlock(builder: PsiBuilder) {
-        val marker = builder.mark()
-        builder.advanceLexer() // consume 'try'
-        
-        // Skip try block content
-        var braceDepth = 0
-        while (!builder.eof()) {
-            when (builder.tokenText) {
-                "{" -> braceDepth++
-                "}" -> {
-                    braceDepth--
-                    if (braceDepth <= 0) {
-                        builder.advanceLexer()
-                        break
-                    }
-                }
-                "catch" -> {
-                    if (braceDepth == 0) break
-                }
+            val text = builder.tokenText
+            if (text?.contains("\n") == true || text == ";" || text == "}") {
+                break
             }
             builder.advanceLexer()
         }
         
-        marker.done(GooTokenTypes.KEYWORD) // Mark as try block
+        marker.done(GooElementTypes.VARIABLE_DECLARATION)
     }
     
-    /**
-     * Parse if statement (with potential truthy/falsey support)
-     */
-    private fun parseIfStatement(builder: PsiBuilder) {
-        val marker = builder.mark()
-        builder.advanceLexer() // consume 'if'
+    private fun isAtAssignment(builder: PsiBuilder): Boolean {
+        // Look ahead for "=" pattern (not ":=" which is variable declaration)
+        val mark = builder.mark()
+        var foundIdentifier = false
+        var foundAssignment = false
         
-        // Skip to opening brace or end of line
-        while (!builder.eof() && builder.tokenText != "{" && builder.tokenText != "\n") {
+        while (!builder.eof() && !foundAssignment) {
+            when {
+                builder.tokenType == GooTokenTypes.IDENTIFIER && !foundIdentifier -> {
+                    foundIdentifier = true
+                    builder.advanceLexer()
+                }
+                builder.tokenText == "=" -> {
+                    val nextToken = builder.lookAhead(1)
+                    if (nextToken?.toString() != "=") {
+                        foundAssignment = true
+                    }
+                }
+                builder.tokenText?.contains("\n") == true -> break
+                else -> builder.advanceLexer()
+            }
+        }
+        
+        mark.rollbackTo()
+        return foundIdentifier && foundAssignment
+    }
+    
+    private fun parseAssignment(builder: PsiBuilder) {
+        val marker = builder.mark()
+        
+        // variable name
+        if (builder.tokenType == GooTokenTypes.IDENTIFIER) {
             builder.advanceLexer()
         }
         
-        marker.done(GooTokenTypes.KEYWORD) // Mark as if statement
-    }
-    
-    /**
-     * Parse lambda expression (=>)
-     */
-    private fun parseLambdaExpression(builder: PsiBuilder) {
-        val marker = builder.mark()
-        builder.advanceLexer() // consume '=>'
-        
-        // Skip lambda body
-        while (!builder.eof() && builder.tokenText != "\n" && builder.tokenText != "," && builder.tokenText != ")") {
+        // skip whitespace
+        while (builder.tokenText?.isBlank() == true) {
             builder.advanceLexer()
         }
         
-        marker.done(GooTokenTypes.OPERATOR) // Mark as lambda
+        // = operator
+        if (builder.tokenText == "=") {
+            builder.advanceLexer()
+        }
+        
+        // value expression
+        while (!builder.eof()) {
+            val text = builder.tokenText
+            if (text?.contains("\n") == true || text == ";" || text == "}") {
+                break
+            }
+            builder.advanceLexer()
+        }
+        
+        marker.done(GooElementTypes.ASSIGNMENT)
+    }
+    
+    private fun parseBlock(builder: PsiBuilder) {
+        val marker = builder.mark()
+        
+        // opening brace
+        if (builder.tokenText == "{") {
+            builder.advanceLexer()
+        }
+        
+        // parse block contents
+        var braceCount = 1
+        while (!builder.eof() && braceCount > 0) {
+            when (builder.tokenText) {
+                "{" -> {
+                    braceCount++
+                    builder.advanceLexer()
+                }
+                "}" -> {
+                    braceCount--
+                    builder.advanceLexer()
+                }
+                else -> {
+                    if (isAtFunction(builder)) {
+                        parseFunction(builder)
+                    } else if (isAtVariableDeclaration(builder)) {
+                        parseVariableDeclaration(builder)
+                    } else {
+                        builder.advanceLexer()
+                    }
+                }
+            }
+        }
+        
+        marker.done(GooElementTypes.BLOCK)
+    }
+    
+    private fun parseStatement(builder: PsiBuilder) {
+        val marker = builder.mark()
+        
+        // Parse until end of statement
+        while (!builder.eof()) {
+            val text = builder.tokenText
+            if (text?.contains("\n") == true || text == ";" || text == "}") {
+                break
+            }
+            builder.advanceLexer()
+        }
+        
+        marker.done(GooElementTypes.EXPRESSION_STATEMENT)
     }
 }

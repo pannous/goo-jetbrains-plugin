@@ -70,6 +70,10 @@
         <lang.refactoringSupport language="Goo"
                                 implementationClass="com.pannous.goo.refactoring.GooRefactoringSupportProvider"/>
         
+        <!-- Reference Resolution -->
+        <psi.referenceContributor language="Goo"
+                                 implementationClass="com.pannous.goo.psi.GooReferenceContributor"/>
+        
         <!-- Compiler Service -->
         <projectService serviceImplementation="com.pannous.goo.services.GooCompilerService"/>
         

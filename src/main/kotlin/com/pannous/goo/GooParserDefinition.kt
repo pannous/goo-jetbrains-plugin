@@ -14,6 +14,7 @@ import com.pannous.goo.lexer.GooLexer
 import com.pannous.goo.lexer.GooTokenTypes
 import com.pannous.goo.parser.GooEnhancedParser
 import com.pannous.goo.psi.GooFile
+import com.pannous.goo.psi.GooElementFactory
 
 class GooParserDefinition : ParserDefinition {
     
@@ -32,9 +33,8 @@ class GooParserDefinition : ParserDefinition {
     override fun getStringLiteralElements(): TokenSet = TokenSet.create(GooTokenTypes.STRING)
     
     override fun createElement(node: ASTNode?): PsiElement {
-        // Create a simple leaf element to avoid recursion
         node ?: throw IllegalArgumentException("ASTNode cannot be null")
-        return com.intellij.psi.impl.source.tree.LeafPsiElement(node.elementType, node.text)
+        return GooElementFactory.createElement(node)
     }
     
     override fun createFile(viewProvider: FileViewProvider): PsiFile = GooFile(viewProvider)
