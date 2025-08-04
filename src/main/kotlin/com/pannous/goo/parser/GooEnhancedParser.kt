@@ -30,6 +30,9 @@ class GooEnhancedParser : PsiParser {
                 isAtVariableDeclaration(builder) -> parseVariableDeclaration(builder)
                 isAtAssignment(builder) -> parseAssignment(builder)
                 
+                // Parse identifiers and other statements
+                builder.tokenType == GooTokenTypes.IDENTIFIER -> parseIdentifierOrStatement(builder)
+                
                 // Parse other statements
                 else -> parseStatement(builder)
             }
@@ -53,9 +56,11 @@ class GooEnhancedParser : PsiParser {
         // func/def keyword
         builder.advanceLexer()
         
-        // function name
+        // function name identifier
         if (builder.tokenType == GooTokenTypes.IDENTIFIER) {
+            val identifierMarker = builder.mark()
             builder.advanceLexer()
+            identifierMarker.done(GooElementTypes.IDENTIFIER)
         }
         
         // parameters (everything until {)
@@ -72,35 +77,42 @@ class GooEnhancedParser : PsiParser {
     }
     
     private fun isAtVariableDeclaration(builder: PsiBuilder): Boolean {
+        if (builder.tokenType != GooTokenTypes.IDENTIFIER) return false
+        
         // Look ahead for ":=" pattern
         val mark = builder.mark()
-        var foundIdentifier = false
+        var tokensAhead = 0
         var foundAssignment = false
         
-        while (!builder.eof() && !foundAssignment) {
-            when {
-                builder.tokenType == GooTokenTypes.IDENTIFIER && !foundIdentifier -> {
-                    foundIdentifier = true
-                    builder.advanceLexer()
-                }
-                builder.tokenText == ":=" -> {
-                    foundAssignment = true
-                }
-                builder.tokenText?.contains("\n") == true -> break
-                else -> builder.advanceLexer()
+        // Skip identifier
+        if (builder.tokenType == GooTokenTypes.IDENTIFIER) {
+            builder.advanceLexer()
+            tokensAhead++
+        }
+        
+        // Look for := within reasonable distance
+        while (!builder.eof() && tokensAhead < 5) {
+            if (builder.tokenText == ":=") {
+                foundAssignment = true
+                break
             }
+            if (builder.tokenText?.contains("\n") == true) break
+            builder.advanceLexer()
+            tokensAhead++
         }
         
         mark.rollbackTo()
-        return foundIdentifier && foundAssignment
+        return foundAssignment
     }
     
     private fun parseVariableDeclaration(builder: PsiBuilder) {
         val marker = builder.mark()
         
-        // variable name
+        // variable name identifier
         if (builder.tokenType == GooTokenTypes.IDENTIFIER) {
+            val identifierMarker = builder.mark()
             builder.advanceLexer()
+            identifierMarker.done(GooElementTypes.IDENTIFIER)
         }
         
         // skip whitespace
@@ -126,38 +138,42 @@ class GooEnhancedParser : PsiParser {
     }
     
     private fun isAtAssignment(builder: PsiBuilder): Boolean {
+        if (builder.tokenType != GooTokenTypes.IDENTIFIER) return false
+        
         // Look ahead for "=" pattern (not ":=" which is variable declaration)
         val mark = builder.mark()
-        var foundIdentifier = false
+        var tokensAhead = 0
         var foundAssignment = false
         
-        while (!builder.eof() && !foundAssignment) {
-            when {
-                builder.tokenType == GooTokenTypes.IDENTIFIER && !foundIdentifier -> {
-                    foundIdentifier = true
-                    builder.advanceLexer()
-                }
-                builder.tokenText == "=" -> {
-                    val nextToken = builder.lookAhead(1)
-                    if (nextToken?.toString() != "=") {
-                        foundAssignment = true
-                    }
-                }
-                builder.tokenText?.contains("\n") == true -> break
-                else -> builder.advanceLexer()
+        // Skip identifier
+        if (builder.tokenType == GooTokenTypes.IDENTIFIER) {
+            builder.advanceLexer()
+            tokensAhead++
+        }
+        
+        // Look for = within reasonable distance, but not :=
+        while (!builder.eof() && tokensAhead < 5) {
+            if (builder.tokenText == "=") {
+                foundAssignment = true
+                break
             }
+            if (builder.tokenText == ":=" || builder.tokenText?.contains("\n") == true) break
+            builder.advanceLexer()
+            tokensAhead++
         }
         
         mark.rollbackTo()
-        return foundIdentifier && foundAssignment
+        return foundAssignment
     }
     
     private fun parseAssignment(builder: PsiBuilder) {
         val marker = builder.mark()
         
-        // variable name
+        // variable name identifier
         if (builder.tokenType == GooTokenTypes.IDENTIFIER) {
+            val identifierMarker = builder.mark()
             builder.advanceLexer()
+            identifierMarker.done(GooElementTypes.IDENTIFIER)
         }
         
         // skip whitespace
@@ -221,6 +237,29 @@ class GooEnhancedParser : PsiParser {
         val marker = builder.mark()
         
         // Parse until end of statement
+        while (!builder.eof()) {
+            val text = builder.tokenText
+            if (text?.contains("\n") == true || text == ";" || text == "}") {
+                break
+            }
+            builder.advanceLexer()
+        }
+        
+        marker.done(GooElementTypes.EXPRESSION_STATEMENT)
+    }
+    
+    private fun parseIdentifierOrStatement(builder: PsiBuilder) {
+        // This handles standalone identifiers (like function calls)
+        val marker = builder.mark()
+        
+        // Mark the identifier itself
+        if (builder.tokenType == GooTokenTypes.IDENTIFIER) {
+            val identifierMarker = builder.mark()
+            builder.advanceLexer()
+            identifierMarker.done(GooElementTypes.IDENTIFIER)
+        }
+        
+        // Parse the rest of the statement
         while (!builder.eof()) {
             val text = builder.tokenText
             if (text?.contains("\n") == true || text == ";" || text == "}") {
