@@ -70,6 +70,12 @@
         <lang.refactoringSupport language="Goo"
                                 implementationClass="com.pannous.goo.refactoring.GooRefactoringSupportProvider"/>
         
+        <!-- Rename Handler -->
+        <renameHandler implementation="com.pannous.goo.refactoring.GooRenameHandler"/>
+        
+        <!-- Rename Processor -->
+        <renamePsiElementProcessor implementation="com.pannous.goo.refactoring.GooRenameProcessor"/>
+        
         <!-- Go-to-Declaration Handler -->
         <gotoDeclarationHandler implementation="com.pannous.goo.navigation.GooGotoDeclarationHandler"/>
         
