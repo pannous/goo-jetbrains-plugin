@@ -159,5 +159,14 @@
             <add-to-group group-id="ProjectViewPopupMenu" anchor="first"/>
             <add-to-group group-id="RunMenu" anchor="first"/>
         </action>
+        
+        <!-- Smart Comment Toggle Action -->
+        <action id="Goo.ToggleComment" class="com.pannous.goo.actions.GooToggleCommentAction"
+                text="Toggle Comment" description="Smart toggle comments (handles both # and // styles)">
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl SLASH"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl DIVIDE"/>
+            <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta SLASH"/>
+            <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta SLASH"/>
+        </action>
     </actions>
 </idea-plugin>
