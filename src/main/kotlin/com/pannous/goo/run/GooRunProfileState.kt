@@ -33,8 +33,10 @@ class GooRunProfileState(
         }
         commandLine.workDirectory = File(workingDir)
         
-        // Add environment variables
+        // Add system environment variables
         commandLine.environment.putAll(System.getenv())
+        // Add custom environment variables
+        commandLine.environment.putAll(configuration.environmentVariables)
         
         return commandLine
     }

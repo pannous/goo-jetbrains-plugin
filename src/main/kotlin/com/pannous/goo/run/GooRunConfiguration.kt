@@ -31,6 +31,12 @@ class GooRunConfiguration(
             gooOptions.workingDirectory = value
         }
 
+    var environmentVariables: MutableMap<String, String>
+        get() = gooOptions.environmentVariables
+        set(value) {
+            gooOptions.environmentVariables = value
+        }
+
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
         return GooRunConfigurationEditor()
     }
@@ -49,4 +55,5 @@ class GooRunConfiguration(
 class GooRunConfigurationOptions : RunConfigurationOptions() {
     var filePath: String? by string()
     var workingDirectory: String? by string()
+    var environmentVariables: MutableMap<String, String> by map()
 }
