@@ -1,0 +1,29 @@
+#!/usr/bin/env goo
+
+package main
+
+import "fmt"
+
+# This is a comment using # syntax
+// This is a comment using // syntax
+
+func main() {
+    name := "Goo"
+    age := 25
+    
+    # Test Goo-specific operators
+    if age > 18 and name ≠ ø {
+        printf("Hello,", name)
+    }
+    
+    # Test logical operators
+    isValid := true
+    if not isValid or ¬isValid {
+        printf("Invalid state")
+    }
+    
+    # Regular Go syntax still works
+    for i := 0; i < 10; i++ {
+        fmt.Println(i)
+    }
+}

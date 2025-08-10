@@ -1,0 +1,142 @@
+%YAML 1.2
+---
+name: Goo
+file_extensions:
+  - goo
+scope: source.goo
+
+variables:
+  identifier: '\b[A-Za-z_][A-Za-z0-9_]*\b'
+  type_chars: '[A-Za-z0-9_\*\[\]]'
+
+contexts:
+  main:
+    - include: global
+
+  global:
+    - include: comments
+    - include: strings
+    - include: keywords
+    - include: operators
+    - include: numbers
+    - include: types
+    - include: functions
+    - include: punctuation
+
+  comments:
+    # Goo supports both // and # comments
+    - match: '(#|//)'
+      scope: punctuation.definition.comment.goo
+      push:
+        - meta_scope: comment.line.goo
+        - match: $
+          pop: true
+    - match: /\*
+      scope: punctuation.definition.comment.begin.goo
+      push:
+        - meta_scope: comment.block.goo
+        - match: \*/
+          scope: punctuation.definition.comment.end.goo
+          pop: true
+
+  strings:
+    - match: '"'
+      scope: punctuation.definition.string.begin.goo
+      push:
+        - meta_scope: string.quoted.double.goo
+        - match: \\.
+          scope: constant.character.escape.goo
+        - match: '"'
+          scope: punctuation.definition.string.end.goo
+          pop: true
+    - match: "`"
+      scope: punctuation.definition.string.begin.goo
+      push:
+        - meta_scope: string.quoted.raw.goo
+        - match: "`"
+          scope: punctuation.definition.string.end.goo
+          pop: true
+    - match: "'"
+      scope: punctuation.definition.string.begin.goo
+      push:
+        - meta_scope: string.quoted.single.goo
+        - match: \\.
+          scope: constant.character.escape.goo
+        - match: "'"
+          scope: punctuation.definition.string.end.goo
+          pop: true
+
+  keywords:
+    # Go keywords
+    - match: \b(break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var)\b
+      scope: keyword.control.goo
+    # Goo-specific keywords
+    - match: \b(and|or|not|ø)\b
+      scope: keyword.operator.goo
+    - match: \b(printf)\b
+      scope: keyword.other.goo
+
+  operators:
+    # Goo-specific operators
+    - match: '≠'
+      scope: keyword.operator.comparison.goo
+    - match: '¬'
+      scope: keyword.operator.logical.goo
+    # Standard Go operators
+    - match: '(\+\+|--)'
+      scope: keyword.operator.arithmetic.goo
+    - match: '(\+|-|\*|/|%)'
+      scope: keyword.operator.arithmetic.goo
+    - match: '(==|!=|<|<=|>|>=)'
+      scope: keyword.operator.comparison.goo
+    - match: '(&&|\|\||!)'
+      scope: keyword.operator.logical.goo
+    - match: '(&|\||\^|<<|>>|&\^)'
+      scope: keyword.operator.bitwise.goo
+    - match: '(\+=|-=|\*=|/=|%=|&=|\|=|\^=|<<=|>>=|&\^=)'
+      scope: keyword.operator.assignment.goo
+    - match: '='
+      scope: keyword.operator.assignment.goo
+    - match: ':='
+      scope: keyword.operator.assignment.goo
+    - match: '<-'
+      scope: keyword.operator.channel.goo
+
+  numbers:
+    - match: '\b(0[xX][0-9A-Fa-f]+|0[0-7]+|\d+)\b'
+      scope: constant.numeric.integer.goo
+    - match: '\b\d+\.\d+([eE][+-]?\d+)?\b'
+      scope: constant.numeric.float.goo
+    - match: '\b\d+[eE][+-]?\d+\b'
+      scope: constant.numeric.float.goo
+
+  types:
+    - match: \b(bool|byte|complex64|complex128|error|float32|float64|int|int8|int16|int32|int64|rune|string|uint|uint8|uint16|uint32|uint64|uintptr)\b
+      scope: storage.type.goo
+    - match: \b(true|false|nil|iota)\b
+      scope: constant.language.goo
+
+  functions:
+    - match: '\bfunc\s+({{identifier}})'
+      captures:
+        1: storage.type.function.goo
+        2: entity.name.function.goo
+    - match: '({{identifier}})\s*\('
+      captures:
+        1: variable.function.goo
+
+  punctuation:
+    - match: '[{}]'
+      scope: punctuation.section.braces.goo
+    - match: '\[|\]'
+      scope: punctuation.section.brackets.goo
+    - match: '\(|\)'
+      scope: punctuation.section.parens.goo
+    - match: ';'
+      scope: punctuation.terminator.goo
+    - match: ','
+      scope: punctuation.separator.goo
+    - match: '\.'
+      scope: punctuation.accessor.goo
+    - match: ':'
+      scope: punctuation.separator.goo
