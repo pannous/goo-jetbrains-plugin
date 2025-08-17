@@ -1,0 +1,26 @@
+{
+	"extensions": ["goo"],
+	"word_separators": "./\\()\"'-:,.;<>~!@#$%^&*|+=[]{}`~?",
+	"line_comment": "//",
+	"line_comment_2": "#",
+	"block_comment": "/* */",
+	"auto_complete": true,
+	"auto_complete_triggers": [
+		{
+			"selector": "source.goo",
+			"characters": "."
+		}
+	],
+	"tab_completion": true,
+	"translate_tabs_to_spaces": false,
+	"use_tab_stops": true,
+	"tab_size": 4,
+	"detect_indentation": true,
+	"auto_indent": true,
+	"smart_indent": true,
+	"trim_automatic_white_space": true,
+	"word_wrap": false,
+	"rulers": [80, 120],
+	"draw_white_space": "selection",
+	"show_line_endings": false
+}

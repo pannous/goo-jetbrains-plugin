@@ -30,6 +30,13 @@ Open any `.goo` file in Sublime Text and the syntax highlighting will be applied
 
 To manually set the syntax: View → Syntax → Goo
 
+### Comment Toggle
+
+- **Ctrl+/** (Cmd+/ on Mac): Toggle line comments using `//`
+- **Ctrl+Shift+/** (Cmd+Shift+/ on Mac): Toggle block comments using `/* */`
+
+The plugin supports both `//` and `#` comment styles for Goo files.
+
 ## Goo Language Features
 
 This plugin supports syntax highlighting for Goo's enhanced Go syntax including:
