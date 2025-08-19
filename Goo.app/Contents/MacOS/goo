@@ -1,130 +1,113 @@
 #!/bin/bash
 
-# Goo wrapper for go binary
-# This script acts as a Goo compiler by preprocessing Goo syntax and calling go
+# Goo GUI Application - handles file opening from Finder and open command
 
-set -e
+# Enable debug logging
+DEBUG_LOG="/tmp/goo-app-debug.log"
+echo "$(date): Goo.app started with args: $*" >> "$DEBUG_LOG"
 
-# Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
-
-# Find go binary
-GO_BINARY=""
-if command -v go &> /dev/null; then
-    GO_BINARY="go"
-elif [ -f "/usr/local/bin/go" ]; then
-    GO_BINARY="/usr/local/bin/go"
-elif [ -f "/usr/bin/go" ]; then
-    GO_BINARY="/usr/bin/go"
-else
-    echo "Error: go binary not found. Please install Go first."
-    exit 1
-fi
-
-# Function to preprocess Goo files
-preprocess_goo() {
-    local input_file="$1"
-    local output_file="$2"
-    
-    # Convert Goo syntax to Go syntax
-    sed -e 's/\bprintf\b/fmt.Println/g' \
-        -e 's/\band\b/\&\&/g' \
-        -e 's/\bor\b/||/g' \
-        -e 's/\bnot\b/!/g' \
-        -e 's/¬/!/g' \
-        -e 's/≠/!=/g' \
-        -e 's/\bø\b/""/g' \
-        -e 's/^#/\/\//g' \
-        -e 's/[[:space:]]#/ \/\//g' \
-        "$input_file" > "$output_file"
-}
-
-# Handle file opening from Finder/open command
-if [ "$1" = "-psn_"* ]; then
-    # Remove the process serial number argument that macOS adds
+# Handle macOS process serial number argument
+if [[ "$1" =~ ^-psn_ ]]; then
+    echo "$(date): Removing PSN argument: $1" >> "$DEBUG_LOG"
     shift
 fi
 
-# If we have a single .goo file argument (likely from Finder), open it with default text editor
-if [ $# -eq 1 ] && [[ "$1" == *.goo ]]; then
-    echo "Opening $1 with default text editor..."
-    open -t "$1"
-    exit 0
-fi
+# Function to open file with appropriate action
+handle_goo_file() {
+    local file="$1"
+    echo "$(date): Handling Goo file: $file" >> "$DEBUG_LOG"
+    
+    # Show user options via AppleScript dialog
+    local choice=$(osascript << EOF
+tell application "System Events"
+    activate
+    set userChoice to button returned of (display dialog "What would you like to do with '$file'?" buttons {"Edit in TextEdit", "Run with Goo", "Build with Goo"} default button "Edit in TextEdit" with title "Goo File Handler")
+    return userChoice
+end tell
+EOF
+)
+    
+    echo "$(date): User chose: $choice" >> "$DEBUG_LOG"
+    
+    case "$choice" in
+        "Edit in TextEdit")
+            open -a TextEdit "$file"
+            ;;
+        "Run with Goo")
+            # Open Terminal and run the file with correct working directory
+            local dir=$(dirname "$file")
+            local filename=$(basename "$file")
+            osascript << EOF
+tell application "Terminal"
+    activate
+    do script "cd '$dir' && goo run '$filename'"
+end tell
+EOF
+            ;;
+        "Build with Goo")
+            # Open Terminal and build the file with correct working directory
+            local dir=$(dirname "$file")
+            local filename=$(basename "$file")
+            osascript << EOF
+tell application "Terminal"
+    activate
+    do script "cd '$dir' && goo build '$filename'"
+end tell
+EOF
+            ;;
+    esac
+}
 
-# If no arguments, show help
+# Main logic
 if [ $# -eq 0 ]; then
-    echo "Goo - Enhanced Go Programming Language"
-    echo ""
-    echo "Usage:"
-    echo "  goo run <file.goo>     Run a Goo program"
-    echo "  goo build <file.goo>   Build a Goo program"
-    echo "  goo <go-command>       Pass through to go binary"
-    echo ""
-    echo "Goo extends Go with:"
-    echo "  - # comments (in addition to //)"
-    echo "  - 'and'/'or' operators instead of &&/||" 
-    echo "  - '¬'/'not' operator instead of !"
-    echo "  - '≠' operator instead of !="
-    echo "  - 'ø' keyword instead of 'nil'"
-    echo "  - 'printf' as synonym for 'fmt.Println'"
-    exit 0
+    # No arguments - show general info dialog
+    echo "$(date): No arguments, showing info dialog" >> "$DEBUG_LOG"
+    osascript << 'EOF'
+tell application "System Events"
+    activate
+    display dialog "Goo Programming Language
+
+Command Line Usage:
+• goo run file.goo - Run a Goo program
+• goo build file.goo - Build a Goo program
+
+To use with files:
+• Drag .goo files to this app
+• Use 'open -a Goo file.goo'" buttons {"Open Terminal", "OK"} default button "OK" with title "Goo Compiler"
+    if button returned is "Open Terminal" then
+        tell application "Terminal"
+            activate
+            do script "goo"
+        end tell
+    end if
+end tell
+EOF
+    
+elif [ $# -eq 1 ] && [[ "$1" == *.goo ]] && [ -f "$1" ]; then
+    # Single .goo file - handle it
+    echo "$(date): Single .goo file detected: $1" >> "$DEBUG_LOG"
+    handle_goo_file "$1"
+    
+elif [ $# -gt 1 ]; then
+    # Multiple files - handle each .goo file
+    echo "$(date): Multiple files detected" >> "$DEBUG_LOG"
+    for file in "$@"; do
+        if [[ "$file" == *.goo ]] && [ -f "$file" ]; then
+            handle_goo_file "$file"
+        fi
+    done
+    
+else
+    # Unknown arguments - show error
+    echo "$(date): Unknown arguments: $*" >> "$DEBUG_LOG"
+    osascript << EOF
+tell application "System Events"
+    activate
+    display dialog "Goo can only handle .goo files.
+
+Received: $*" buttons {"OK"} default button "OK" with title "Goo Error"
+end tell
+EOF
 fi
 
-# Handle Goo-specific commands
-case "$1" in
-    "run")
-        if [ $# -lt 2 ]; then
-            echo "Error: goo run requires a file argument"
-            exit 1
-        fi
-        
-        GOO_FILE="$2"
-        if [ ! -f "$GOO_FILE" ]; then
-            echo "Error: file '$GOO_FILE' not found"
-            exit 1
-        fi
-        
-        # Create temporary Go file
-        TEMP_GO_FILE=$(mktemp /tmp/goo_XXXXXX.go)
-        trap "rm -f '$TEMP_GO_FILE'" EXIT
-        
-        # Preprocess Goo to Go
-        preprocess_goo "$GOO_FILE" "$TEMP_GO_FILE"
-        
-        # Run with go
-        shift 2  # Remove 'run' and filename
-        "$GO_BINARY" run "$TEMP_GO_FILE" "$@"
-        ;;
-        
-    "build")
-        if [ $# -lt 2 ]; then
-            echo "Error: goo build requires a file argument"
-            exit 1
-        fi
-        
-        GOO_FILE="$2"
-        if [ ! -f "$GOO_FILE" ]; then
-            echo "Error: file '$GOO_FILE' not found"
-            exit 1
-        fi
-        
-        # Create temporary Go file
-        TEMP_GO_FILE=$(mktemp /tmp/goo_XXXXXX.go)
-        trap "rm -f '$TEMP_GO_FILE'" EXIT
-        
-        # Preprocess Goo to Go
-        preprocess_goo "$GOO_FILE" "$TEMP_GO_FILE"
-        
-        # Build with go
-        shift 2  # Remove 'build' and filename
-        OUTPUT_NAME="${GOO_FILE%.*}"  # Remove .goo extension
-        "$GO_BINARY" build -o "$OUTPUT_NAME" "$TEMP_GO_FILE" "$@"
-        ;;
-        
-    *)
-        # Pass through to go binary for other commands
-        exec "$GO_BINARY" "$@"
-        ;;
-esac
+echo "$(date): Goo.app finished" >> "$DEBUG_LOG"

@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleExecutable</key>
-	<string>goo-gui</string>
+	<string>Goo</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.pannous.goo</string>
 	<key>CFBundleInfoDictionaryVersion</key>
@@ -26,8 +26,52 @@
 	<true/>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.developer-tools</string>
-	<!-- Removed CFBundleDocumentTypes to prevent file association conflicts -->
-	<!-- Removed UTExportedTypeDeclarations to prevent file type conflicts -->
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Goo Source File</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>goo</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleTypeIconFile</key>
+			<string>goo.icns</string>
+			<key>LSTypeIsPackage</key>
+			<false/>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.pannous.goo.source</string>
+			</array>
+		</dict>
+	</array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.pannous.goo.source</string>
+			<key>UTTypeDescription</key>
+			<string>Goo Source File</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.source-code</string>
+				<string>public.plain-text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>goo</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>text/plain</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 	<key>NSAppleScriptEnabled</key>
 	<true/>
 	<key>LSUIElement</key>
