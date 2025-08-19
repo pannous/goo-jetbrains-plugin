@@ -19,6 +19,13 @@ class GooCompletionContributor : CompletionContributor() {
             GooKeywordCompletionProvider()
         )
         
+        // Package member completion (e.g., units.Meter, fmt.Println)
+        extend(
+            CompletionType.BASIC,
+            PlatformPatterns.psiElement().withLanguage(GooLanguage),
+            GooPackageCompletionProvider()
+        )
+        
         // Smart completion for more advanced features
         extend(
             CompletionType.SMART,
@@ -225,6 +232,8 @@ class GooSmartCompletionProvider : CompletionProvider<CompletionParameters>() {
     private fun addPackageMemberCompletions(result: CompletionResultSet, lineText: String) {
         val packageName = lineText.substringBeforeLast(".").substringAfterLast(" ").trim()
         
+        // Note: This method is now supplemented by GooPackageCompletionProvider
+        // which uses go doc for more comprehensive completion
         when (packageName) {
             "fmt" -> {
                 listOf("Printf", "Println", "Print", "Sprintf", "Scanln", "Scanf").forEach { method ->
@@ -253,6 +262,28 @@ class GooSmartCompletionProvider : CompletionProvider<CompletionParameters>() {
                     result.addElement(
                         LookupElementBuilder.create(method)
                             .withTypeText("strings method")
+                    )
+                }
+            }
+            "units" -> {
+                // Enhanced units package completion
+                listOf(
+                    "Meter", "Kilogram", "Second", "Ampere", "Kelvin", "Mole", "Candela",
+                    "Newton", "Joule", "Watt", "Pascal", "Volt", "Ohm", "Farad",
+                    "Convert", "String", "Parse", "New", "Scale"
+                ).forEach { symbol ->
+                    result.addElement(
+                        LookupElementBuilder.create(symbol)
+                            .withTypeText("units symbol")
+                            .withInsertHandler { context, item ->
+                                // Add parentheses for function-like symbols
+                                if (symbol in listOf("Convert", "String", "Parse", "New", "Scale")) {
+                                    val editor = context.editor
+                                    val caretOffset = editor.caretModel.offset
+                                    editor.document.insertString(caretOffset, "()")
+                                    editor.caretModel.moveToOffset(caretOffset + 1)
+                                }
+                            }
                     )
                 }
             }
