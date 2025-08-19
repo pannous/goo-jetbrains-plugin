@@ -4,9 +4,42 @@ This is a macOS application bundle that wraps the `go` binary to provide Goo lan
 
 ## Installation
 
+### Automatic Installation (Recommended)
+```bash
+./install-goo-app.sh
+```
+
+This script will:
+- Remove quarantine attributes
+- Copy Goo.app to /Applications
+- Register with Launch Services
+- Create command-line symlink
+- Fix permissions
+
+### Manual Installation
 1. Copy `Goo.app` to your `/Applications` folder
-2. Make sure Go is installed on your system
-3. You can now use `goo` commands from Terminal or by opening .goo files
+2. Remove quarantine: `xattr -r -d com.apple.quarantine /Applications/Goo.app`
+3. Register with Launch Services: `/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -f /Applications/Goo.app`
+4. Create symlink: `sudo ln -sf /Applications/Goo.app/Contents/MacOS/goo /usr/local/bin/goo`
+
+### Fixing File Association Issues
+
+If you get "Finder does not have permission to open" errors:
+
+1. **Remove Quarantine** (most common fix):
+   ```bash
+   xattr -r -d com.apple.quarantine /path/to/file.goo
+   ```
+
+2. **Set Default App**:
+   - Right-click the .goo file → "Get Info"
+   - Under "Open with", select your text editor (VS Code, TextEdit, etc.)
+   - Click "Change All..."
+
+3. **Re-register the app**:
+   ```bash
+   /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -f /Applications/Goo.app
+   ```
 
 ## Usage
 
