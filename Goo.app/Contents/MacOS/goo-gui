@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# GUI wrapper for Goo.app to handle file opening from Finder
+
+# Log for debugging
+echo "$(date): goo-gui called with args: $*" >> /tmp/goo-debug.log
+
+# Handle the case where macOS passes files as arguments
+for arg in "$@"; do
+    if [[ "$arg" == *.goo ]]; then
+        echo "$(date): Opening $arg with text editor" >> /tmp/goo-debug.log
+        # Open with default text editor
+        open -t "$arg"
+        exit 0
+    fi
+done
+
+# If no .goo files, show help in Terminal
+echo "$(date): No .goo files found, showing help" >> /tmp/goo-debug.log
+open -a Terminal.app "$(dirname "$0")/goo"

@@ -53,7 +53,7 @@ fi
 
 # Test the installation
 echo "🧪 Testing installation..."
-if /Applications/Goo.app/Contents/MacOS/goo --help >/dev/null 2>&1; then
+if /Applications/Goo.app/Contents/MacOS/goo --help; then
     echo "✅ Goo.app installed successfully!"
     echo ""
     echo "Usage:"

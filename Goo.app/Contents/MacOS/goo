@@ -40,6 +40,19 @@ preprocess_goo() {
         "$input_file" > "$output_file"
 }
 
+# Handle file opening from Finder/open command
+if [ "$1" = "-psn_"* ]; then
+    # Remove the process serial number argument that macOS adds
+    shift
+fi
+
+# If we have a single .goo file argument (likely from Finder), open it with default text editor
+if [ $# -eq 1 ] && [[ "$1" == *.goo ]]; then
+    echo "Opening $1 with default text editor..."
+    open -t "$1"
+    exit 0
+fi
+
 # If no arguments, show help
 if [ $# -eq 0 ]; then
     echo "Goo - Enhanced Go Programming Language"
