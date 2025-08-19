@@ -42,10 +42,17 @@ class GooPackageCompletionProvider : CompletionProvider<CompletionParameters>() 
         val file = parameters.originalFile
         val project = parameters.position.project
         
+        // Debug logging
+        println("GooPackageCompletion: Completion triggered at offset ${position.textOffset}")
+        println("GooPackageCompletion: Position text: '${position.text}'")
+        
         // Extract package name from context
         val packageName = extractPackageNameFromContext(position, file)
+        println("GooPackageCompletion: Extracted package name: $packageName")
+        
         if (packageName != null) {
             val symbols = getPackageSymbols(packageName, project)
+            println("GooPackageCompletion: Found ${symbols.size} symbols for $packageName")
             addSymbolCompletions(result, symbols, packageName)
         }
     }
@@ -55,54 +62,100 @@ class GooPackageCompletionProvider : CompletionProvider<CompletionParameters>() 
             val text = file.text
             val offset = position.textOffset
             
-            // Look backwards from cursor to find package name before dot
+            println("GooPackageCompletion: Full text around cursor: '${text.substring(maxOf(0, offset-20), minOf(text.length, offset+5))}'")
+            
+            // Since we're triggered after a dot, look backwards for the identifier
             var i = offset - 1
-            while (i >= 0 && text[i] == '.') i-- // Skip dots
+            
+            // Skip the dot and any whitespace
+            while (i >= 0 && (text[i] == '.' || text[i].isWhitespace())) i--
             if (i < 0) return null
             
-            // Find the end of the identifier
+            // Find the start of the identifier
             val end = i + 1
             while (i >= 0 && (text[i].isLetterOrDigit() || text[i] == '_')) i--
             val start = i + 1
             
             if (start < end) {
                 val identifier = text.substring(start, end)
+                println("GooPackageCompletion: Found identifier before dot: '$identifier'")
                 
                 // Check if this identifier is an imported package
                 if (isImportedPackage(identifier, file)) {
+                    println("GooPackageCompletion: '$identifier' is an imported package")
                     return identifier
+                } else {
+                    println("GooPackageCompletion: '$identifier' is NOT an imported package")
                 }
             }
         } catch (e: Exception) {
-            // Ignore parsing errors
+            println("GooPackageCompletion: Error extracting package name: ${e.message}")
+            e.printStackTrace()
         }
         return null
     }
     
     private fun isImportedPackage(identifier: String, file: PsiFile): Boolean {
         val text = file.text
+        println("GooPackageCompletion: Checking if '$identifier' is imported")
+        println("GooPackageCompletion: File imports section: ${text.substring(0, minOf(200, text.length))}")
         
-        // Look for import statements
-        val importRegex = Regex("""import\s+["']([^"']+)["']""")
-        val matches = importRegex.findAll(text)
+        // Look for import statements with double quotes
+        val importRegex1 = Regex("""import\s+"([^"]+)"""")
+        val matches1 = importRegex1.findAll(text)
         
-        for (match in matches) {
+        for (match in matches1) {
             val importPath = match.groupValues[1]
             val packageName = importPath.substringAfterLast('/')
+            println("GooPackageCompletion: Found import '$importPath' -> package '$packageName'")
+            if (packageName == identifier) {
+                return true
+            }
+        }
+        
+        // Look for import statements with single quotes
+        val importRegex2 = Regex("""import\s+'([^']+)'""")
+        val matches2 = importRegex2.findAll(text)
+        
+        for (match in matches2) {
+            val importPath = match.groupValues[1]
+            val packageName = importPath.substringAfterLast('/')
+            println("GooPackageCompletion: Found import '$importPath' -> package '$packageName'")
             if (packageName == identifier) {
                 return true
             }
         }
         
         // Also check for aliased imports
-        val aliasRegex = Regex("""import\s+(\w+)\s+["']([^"']+)["']""")
-        val aliasMatches = aliasRegex.findAll(text)
+        val aliasRegex1 = Regex("""import\s+(\w+)\s+"([^"]+)"""")
+        val aliasMatches1 = aliasRegex1.findAll(text)
         
-        for (match in aliasMatches) {
+        for (match in aliasMatches1) {
             val alias = match.groupValues[1]
+            val importPath = match.groupValues[2]
+            println("GooPackageCompletion: Found aliased import '$alias' for '$importPath'")
             if (alias == identifier) {
                 return true
             }
+        }
+        
+        val aliasRegex2 = Regex("""import\s+(\w+)\s+'([^']+)'""")
+        val aliasMatches2 = aliasRegex2.findAll(text)
+        
+        for (match in aliasMatches2) {
+            val alias = match.groupValues[1]
+            val importPath = match.groupValues[2]
+            println("GooPackageCompletion: Found aliased import '$alias' for '$importPath'")
+            if (alias == identifier) {
+                return true
+            }
+        }
+        
+        // Standard library packages are always available (even without explicit import in some contexts)
+        val standardPackages = setOf("fmt", "os", "strings", "strconv", "time", "io", "net", "units")
+        if (identifier in standardPackages) {
+            println("GooPackageCompletion: '$identifier' is a standard package")
+            return true
         }
         
         return false

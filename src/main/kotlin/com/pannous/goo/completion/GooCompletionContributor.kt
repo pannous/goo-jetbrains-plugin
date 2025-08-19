@@ -22,8 +22,20 @@ class GooCompletionContributor : CompletionContributor() {
         // Package member completion (e.g., units.Meter, fmt.Println)
         extend(
             CompletionType.BASIC,
-            PlatformPatterns.psiElement().withLanguage(GooLanguage),
+            PlatformPatterns.psiElement()
+                .withLanguage(GooLanguage)
+                .afterLeaf(
+                    PlatformPatterns.psiElement()
+                        .withText(".")
+                ),
             GooPackageCompletionProvider()
+        )
+        
+        // Direct package completion as fallback
+        extend(
+            CompletionType.BASIC,
+            PlatformPatterns.psiElement().withLanguage(GooLanguage),
+            GooDirectCompletionProvider()
         )
         
         // Smart completion for more advanced features
