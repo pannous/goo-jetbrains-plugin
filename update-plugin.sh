@@ -32,9 +32,11 @@ echo "✅ Plugin updated successfully!"
 # Check if GoLand is running
 if pgrep -f "GoLand" > /dev/null; then
     echo "⚠️  GoLand is currently running"
-    read -p "🔄 Restart GoLand to load new plugin? (y/n): " -n 1 -r
+    # read -p "🔄 Restart GoLand to load new plugin? (y/n): " -n 1 -r
+    # OK=$REPLY
+    OK="Y"
     echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if [[ $OK =~ ^[Yy]$ ]]; then
         echo "🔄 Restarting GoLand..."
         
         # Kill GoLand gracefully
@@ -55,6 +57,8 @@ if pgrep -f "GoLand" > /dev/null; then
     fi
 else
     echo "ℹ️  GoLand not running. Plugin will be loaded on next startup."
+    open -a "GoLand"
+    echo "✅ GoLand started with new plugin!"
 fi
 
 echo "🎉 Development cycle complete!"

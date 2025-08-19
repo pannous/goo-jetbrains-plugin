@@ -42,17 +42,11 @@ class GooPackageCompletionProvider : CompletionProvider<CompletionParameters>() 
         val file = parameters.originalFile
         val project = parameters.position.project
         
-        // Debug logging
-        println("GooPackageCompletion: Completion triggered at offset ${position.textOffset}")
-        println("GooPackageCompletion: Position text: '${position.text}'")
-        
         // Extract package name from context
         val packageName = extractPackageNameFromContext(position, file)
-        println("GooPackageCompletion: Extracted package name: $packageName")
         
         if (packageName != null) {
             val symbols = getPackageSymbols(packageName, project)
-            println("GooPackageCompletion: Found ${symbols.size} symbols for $packageName")
             addSymbolCompletions(result, symbols, packageName)
         }
     }
