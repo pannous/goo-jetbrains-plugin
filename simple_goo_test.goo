@@ -1,0 +1,20 @@
+package main
+
+import "fmt"
+
+func main() {
+    # Test Goo syntax
+    name := "World"
+    greeting := "Hello"
+    
+    # Test Goo operators
+    if name ≠ ø and greeting ≠ "" {
+        printf(greeting + ",", name + "!")
+    }
+    
+    # Test logical operators
+    isValid := true
+    if not isValid or name == "World" {
+        printf("Goo syntax works!")
+    }
+}

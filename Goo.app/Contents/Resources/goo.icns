@@ -1,0 +1,6 @@
+# This is a placeholder for the icon file
+# To create a proper .icns file, you would need to:
+# 1. Create a high-resolution PNG icon (1024x1024)
+# 2. Use iconutil or a similar tool to convert to .icns format
+# 
+# For now, macOS will use a default icon

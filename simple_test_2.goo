@@ -1,0 +1,11 @@
+package main
+
+import "fmt"
+
+func main() {
+    # Test basic functionality
+    name := "World"
+    
+    printf("Hello,", name + "!")
+    printf("Testing Goo syntax!")
+}
