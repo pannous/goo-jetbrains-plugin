@@ -98,16 +98,63 @@ elif [ $# -gt 1 ]; then
     done
     
 else
-    # Unknown arguments - show error
-    echo "$(date): Unknown arguments: $*" >> "$DEBUG_LOG"
-    osascript << EOF
+    # Handle command line arguments (like --help, --version, etc.)
+    case "$1" in
+        --help|-h|help)
+            echo "$(date): Showing help" >> "$DEBUG_LOG"
+            osascript << 'EOF'
 tell application "System Events"
     activate
-    display dialog "Goo can only handle .goo files.
+    set userChoice to button returned of (display dialog "Goo Programming Language
 
-Received: $*" buttons {"OK"} default button "OK" with title "Goo Error"
+Command Line Usage:
+• goo run file.goo - Run a Goo program
+• goo build file.goo - Build a Goo program
+• goo --help - Show this help
+
+GUI Usage:
+• Drag .goo files to this app
+• Use 'open -a Goo file.goo'
+• Double-click .goo files (set as default)" buttons {"Open Terminal", "OK"} default button "OK" with title "Goo Help")
+    if userChoice is "Open Terminal" then
+        tell application "Terminal"
+            activate
+            do script "goo --help"
+        end tell
+    end if
 end tell
 EOF
+            ;;
+        --version|-v|version)
+            echo "$(date): Showing version" >> "$DEBUG_LOG"
+            osascript << EOF
+tell application "Terminal"
+    activate
+    do script "goo --version"
+end tell
+EOF
+            ;;
+        --test)
+            # Internal test flag for installation script
+            echo "$(date): Test flag received" >> "$DEBUG_LOG"
+            exit 0
+            ;;
+        *)
+            # Unknown arguments - show error
+            echo "$(date): Unknown arguments: $*" >> "$DEBUG_LOG"
+            osascript << EOF
+tell application "System Events"
+    activate
+    display dialog "Goo can handle:
+• .goo files for editing/running/building
+• --help for help
+• --version for version info
+
+Received: $*" buttons {"OK"} default button "OK" with title "Goo"
+end tell
+EOF
+            ;;
+    esac
 fi
 
 echo "$(date): Goo.app finished" >> "$DEBUG_LOG"
