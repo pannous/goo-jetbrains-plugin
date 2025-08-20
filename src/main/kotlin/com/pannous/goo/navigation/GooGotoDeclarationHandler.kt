@@ -1,237 +1,412 @@
 package com.pannous.goo.navigation
 
 import com.intellij.codeInsight.navigation.actions.GotoDeclarationHandler
+import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiManager
-import com.intellij.psi.search.FilenameIndex
-import com.intellij.psi.search.GlobalSearchScope
+import com.intellij.psi.PsiFile
+import com.intellij.psi.util.PsiTreeUtil
 import com.pannous.goo.psi.GooFile
-import com.pannous.goo.lexer.GooTokenTypes
-import java.io.File
+import com.pannous.goo.psi.GooIdentifier
 
 /**
- * Enhanced go-to-declaration handler that can navigate to:
- * 1. Local declarations within the same .goo file
- * 2. Go library functions using safe file-based lookup
+ * Custom Go-to-Declaration handler for Goo language constructs
  */
 class GooGotoDeclarationHandler : GotoDeclarationHandler {
+    
+    companion object {
+        // Cache for available packages to avoid repeated filesystem access
+        private var packageCache: Set<String>? = null
+        private var packageCacheTime: Long = 0
+        private const val CACHE_DURATION_MS = 30000 // 30 seconds
+        
+        private fun getAvailablePackages(): Set<String> {
+            val currentTime = System.currentTimeMillis()
+            if (packageCache == null || (currentTime - packageCacheTime) > CACHE_DURATION_MS) {
+                packageCache = discoverPackages()
+                packageCacheTime = currentTime
+            }
+            return packageCache ?: emptySet()
+        }
+        
+        private fun discoverPackages(): Set<String> {
+            val packages = mutableSetOf<String>()
+            try {
+                val goSrcDir = java.io.File("/opt/other/go/src")
+                if (goSrcDir.exists() && goSrcDir.isDirectory) {
+                    goSrcDir.listFiles()?.forEach { dir ->
+                        if (dir.isDirectory && !dir.name.startsWith(".")) {
+                            // Check if the package has any .go files (excluding test files)
+                            val hasGoFiles = dir.listFiles()?.any { file ->
+                                file.isFile && file.name.endsWith(".go") && !file.name.endsWith("_test.go")
+                            } ?: false
+                            
+                            if (hasGoFiles) {
+                                packages.add(dir.name)
+                                println("GooGotoDeclaration: Discovered package: ${dir.name}")
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                println("GooGotoDeclaration: Error discovering packages: ${e.message}")
+            }
+            println("GooGotoDeclaration: Total discovered packages: ${packages.size}")
+            return packages
+        }
+    }
     
     override fun getGotoDeclarationTargets(
         sourceElement: PsiElement?,
         offset: Int,
-        editor: Editor?
+        editor: Editor
     ): Array<PsiElement>? {
         
-        if (sourceElement == null || sourceElement.containingFile !is GooFile) {
+        // Only handle .goo files
+        val file = sourceElement?.containingFile
+        if (file == null || !file.name.endsWith(".goo")) {
             return null
         }
         
-        // Only handle identifiers
-        if (sourceElement.node?.elementType != GooTokenTypes.IDENTIFIER) {
-            return null
-        }
+        // Get the text at cursor position
+        val element = sourceElement ?: return null
+        val name = element.text
         
-        val identifierText = sourceElement.text
-        if (identifierText.isBlank()) {
-            return null
-        }
+        // Debug logging
+        println("GooGotoDeclaration: Processing element '$name' of type ${element.javaClass.simpleName}")
         
-        val file = sourceElement.containingFile
-        val project = file.project
-        val targets = mutableListOf<PsiElement>()
-        
-        // Check if this is a qualified call (e.g., sdl.GetMouseState)
-        val isQualifiedCall = checkIfQualifiedCall(sourceElement, file.text, offset)
-        
-        if (isQualifiedCall.first) {
-            // Handle package.Function calls
-            val packageName = isQualifiedCall.second
-            val functionName = identifierText
-            
-            // Try to find Go library declarations
-            findGoLibraryDeclaration(project, packageName, functionName)?.let { targets.add(it) }
+        // Check if this is a Goo package import - be more flexible with element types
+        if (isGooPackageImport(element, name)) {
+            println("GooGotoDeclaration: Found Goo package import: $name")
+            return arrayOf(createVirtualGooPackage(element, name))
         } else {
-            // Handle local declarations within the same file
-            findLocalDeclarations(file, identifierText, targets)
-        }
-        
-        return if (targets.isNotEmpty()) targets.toTypedArray() else null
-    }
-    
-    private fun checkIfQualifiedCall(element: PsiElement, fileText: String, offset: Int): Pair<Boolean, String> {
-        // Look backwards from the element position to see if there's a package prefix
-        val elementStart = element.textRange.startOffset
-        val textBefore = fileText.substring(0, elementStart)
-        
-        // Look for pattern: packageName.functionName
-        val qualifiedRegex = Regex("(\\w+)\\.\\s*$")
-        val match = qualifiedRegex.find(textBefore)
-        
-        return if (match != null) {
-            Pair(true, match.groupValues[1])
-        } else {
-            Pair(false, "")
-        }
-    }
-    
-    private fun findGoLibraryDeclaration(project: Project, packageName: String, functionName: String): PsiElement? {
-        try {
-            // Strategy 1: Try to find in project's Go files first (safest)
-            findInProjectGoFiles(project, packageName, functionName)?.let { return it }
-            
-            // Strategy 2: Look in common Go library locations
-            findInCommonGoLibraries(project, packageName, functionName)?.let { return it }
-            
-            // Strategy 3: Try Go module cache if available
-            findInGoModuleCache(project, packageName, functionName)?.let { return it }
-            
-        } catch (e: Exception) {
-            // Fail silently to avoid crashes - this is the key to safety
-            return null
-        }
-        
-        return null
-    }
-    
-    private fun findInProjectGoFiles(project: Project, packageName: String, functionName: String): PsiElement? {
-        try {
-            // Look in the current project's Go files first
-            val goFiles = FilenameIndex.getAllFilesByExt(project, "go", GlobalSearchScope.projectScope(project))
-            
-            for (goFile in goFiles) {
-                val psiFile = PsiManager.getInstance(project).findFile(goFile)
-                psiFile?.let { file ->
-                    val fileText = file.text
-                    
-                    // Check if this file belongs to the right package
-                    if (fileText.contains("package $packageName")) {
-                        val funcPattern = Regex("func\\s+$functionName\\s*\\(")
-                        val match = funcPattern.find(fileText)
-                        if (match != null) {
-                            val functionOffset = match.range.first + 5 // Skip "func "
-                            return file.findElementAt(functionOffset)
-                        }
-                    }
-                }
+            // Debug: check if we stripped quotes and try again
+            val cleanName = name.removePrefix("\"").removeSuffix("\"").removePrefix("'").removeSuffix("'")
+            if (cleanName != name && isGooPackageImport(element, cleanName)) {
+                println("GooGotoDeclaration: Found Goo package import after cleaning quotes: $cleanName")
+                return arrayOf(createVirtualGooPackage(element, cleanName))
             }
-        } catch (e: Exception) {
-            // Fail silently
+            println("GooGotoDeclaration: '$name' (cleaned: '$cleanName') not recognized as package import")
         }
+        
+        // Check if this is a Goo package member access
+        val packageMember = getPackageMemberInfo(element, name)
+        if (packageMember != null) {
+            println("GooGotoDeclaration: Found package member: ${packageMember.first}.${packageMember.second}")
+            return arrayOf(createVirtualPackageMember(element, packageMember.first, packageMember.second))
+        }
+        
+        // Check if this is a local variable declaration
+        val localVarDeclaration = findLocalVariableDeclaration(element, name)
+        if (localVarDeclaration != null) {
+            println("GooGotoDeclaration: Found local variable declaration: $name")
+            return arrayOf(localVarDeclaration)
+        }
+        
         return null
     }
     
-    private fun findInCommonGoLibraries(project: Project, packageName: String, functionName: String): PsiElement? {
-        try {
-            val commonGoPackages = mapOf(
-                "sdl" to listOf("github.com/veandco/go-sdl2/sdl", "sdl"),
-                "fmt" to listOf("fmt"),
-                "os" to listOf("os"),
-                "io" to listOf("io"),
-                "net" to listOf("net"),
-                "http" to listOf("net/http"),
-                "json" to listOf("encoding/json"),
-                "time" to listOf("time"),
-                "strings" to listOf("strings"),
-                "strconv" to listOf("strconv"),
-                "context" to listOf("context"),
-                "sync" to listOf("sync"),
-                "log" to listOf("log")
-            )
-            
-            val possiblePaths = commonGoPackages[packageName] ?: return null
-            
-            // Search in all Go files
-            val goFiles = FilenameIndex.getAllFilesByExt(project, "go", GlobalSearchScope.allScope(project))
-            
-            for (path in possiblePaths) {
-                for (goFile in goFiles) {
-                    if (goFile.path.contains(path.replace("/", File.separator)) || 
-                        goFile.parent?.name == packageName) {
-                        
-                        val psiFile = PsiManager.getInstance(project).findFile(goFile)
-                        psiFile?.let { file ->
-                            val fileText = file.text
-                            
-                            // Look for function declaration
-                            val funcPattern = Regex("func\\s+$functionName\\s*\\(")
-                            val match = funcPattern.find(fileText)
-                            if (match != null) {
-                                val functionOffset = match.range.first + 5
-                                return file.findElementAt(functionOffset)
-                            }
-                        }
-                    }
-                }
+    private fun isGooPackageImport(element: PsiElement, name: String): Boolean {
+        if (name !in getAvailablePackages()) return false
+        
+        // Check if this is within an import statement - be more flexible
+        val fileText = element.containingFile.text
+        val offset = element.textOffset
+        
+        // Look for import statements containing this element
+        val lines = fileText.split('\n')
+        for (line in lines) {
+            if (line.trim().startsWith("import") && 
+                (line.contains("\"$name\"") || line.contains("'$name'"))) {
+                return true
             }
-        } catch (e: Exception) {
-            // Fail silently
         }
-        return null
+        
+        // Alternative: check if the element is directly within quotes after import
+        val before = fileText.substring(0, offset + name.length)
+        val after = fileText.substring(offset)
+        
+        if (before.contains("import") && 
+            (before.endsWith("\"$name") || before.endsWith("'$name")) &&
+            (after.startsWith("\"") || after.startsWith("'"))) {
+            return true
+        }
+        
+        return false
     }
     
-    private fun findInGoModuleCache(project: Project, packageName: String, functionName: String): PsiElement? {
-        try {
-            // Look in Go module cache locations (GOPATH/pkg/mod)
-            val userHome = System.getProperty("user.home")
-            val goPaths = listOf(
-                "$userHome/go/pkg/mod",
-                System.getenv("GOPATH")?.let { "$it/pkg/mod" }
-            ).filterNotNull()
-            
-            for (goPath in goPaths) {
-                val goFiles = FilenameIndex.getAllFilesByExt(project, "go", GlobalSearchScope.allScope(project))
+    private fun getPackageMemberInfo(element: PsiElement, name: String): Pair<String, String>? {
+        // Method 1: Check siblings
+        val prevSibling = element.prevSibling
+        if (prevSibling?.text == ".") {
+            val packageElement = prevSibling.prevSibling
+            if (packageElement != null) {
+                val packageName = packageElement.text
                 
-                for (goFile in goFiles) {
-                    if (goFile.path.contains(goPath) && goFile.path.contains(packageName)) {
-                        val psiFile = PsiManager.getInstance(project).findFile(goFile)
-                        psiFile?.let { file ->
-                            val fileText = file.text
-                            val funcPattern = Regex("func\\s+$functionName\\s*\\(")
-                            val match = funcPattern.find(fileText)
-                            if (match != null) {
-                                val functionOffset = match.range.first + 5
-                                return file.findElementAt(functionOffset)
-                            }
-                        }
-                    }
+                if (packageName in getAvailablePackages()) {
+                    // For any discovered package, accept the member name
+                    // We'll verify it exists when we open the source file
+                    return Pair(packageName, name)
                 }
             }
-        } catch (e: Exception) {
-            // Fail silently
         }
+        
+        // Method 2: Text-based analysis for more robust detection
+        val fileText = element.containingFile.text
+        val offset = element.textOffset
+        
+        // Look backward for package.member pattern
+        val beforeText = fileText.substring(0, offset)
+        val regex = Regex("(\\w+)\\.$")
+        val match = regex.find(beforeText.reversed())
+        
+        if (match != null) {
+            val packageName = match.groupValues[1].reversed()
+            if (packageName in getAvailablePackages()) {
+                // For any discovered package, accept the member name
+                // We'll verify it exists when we open the source file
+                return Pair(packageName, name)
+            }
+        }
+        
         return null
     }
     
-    private fun findLocalDeclarations(file: PsiElement, identifierText: String, targets: MutableList<PsiElement>) {
-        // Simple text-based search for function declarations within the same file
-        val fileText = file.text
-        val lines = fileText.lines()
+    private fun findLocalVariableDeclaration(element: PsiElement, variableName: String): PsiElement? {
+        val file = element.containingFile
+        val text = file.text
+        val currentOffset = element.textOffset
+        
+        // Common variable declaration patterns in Goo/Go
+        val patterns = listOf(
+            // var declarations: var name type, var name = value
+            Regex("\\bvar\\s+$variableName\\s*(?:[\\w\\[\\]\\*]+\\s*)?(?:=|\\n)"),
+            // Short variable declarations: name := value
+            Regex("\\b$variableName\\s*:=\\s*"),
+            // Function parameters: func name(param type)
+            Regex("\\bfunc\\s+\\w+\\s*\\([^)]*\\b$variableName\\s+[\\w\\[\\]\\*]+"),
+            // For loop variables: for name := range, for i, name := range
+            Regex("\\bfor\\s+(?:\\w+\\s*,\\s*)?$variableName\\s*:?=\\s*(?:range\\s+)?")
+        )
+        
+        val lines = text.split('\n')
         
         for ((lineIndex, line) in lines.withIndex()) {
-            // Look for function declarations: "func functionName" or "def functionName"
-            val funcRegex = Regex("\\b(func|def)\\s+($identifierText)\\b")
-            val funcMatch = funcRegex.find(line)
-            if (funcMatch != null) {
-                // Find the PSI element at this position
-                val lineStartOffset = lines.take(lineIndex).sumOf { it.length + 1 }
-                val functionNameOffset = lineStartOffset + funcMatch.range.first + funcMatch.groupValues[1].length + 1
-                val target = file.findElementAt(functionNameOffset)
-                if (target != null && target.text == identifierText) {
-                    targets.add(target)
-                }
+            // Only look at lines before the current position
+            val document = com.intellij.psi.PsiDocumentManager.getInstance(file.project).getDocument(file)
+            if (document != null && lineIndex < document.lineCount) {
+                val lineStartOffset = document.getLineStartOffset(lineIndex)
+                if (lineStartOffset >= currentOffset) continue // Skip lines after current position
             }
             
-            // Look for variable declarations: "variableName :="
-            val varRegex = Regex("\\b($identifierText)\\s*:=")
-            val varMatch = varRegex.find(line)
-            if (varMatch != null) {
-                val lineStartOffset = lines.take(lineIndex).sumOf { it.length + 1 }
-                val variableNameOffset = lineStartOffset + varMatch.range.first
-                val target = file.findElementAt(variableNameOffset)
-                if (target != null && target.text == identifierText) {
-                    targets.add(target)
+            for (pattern in patterns) {
+                val match = pattern.find(line)
+                if (match != null) {
+                    println("GooGotoDeclaration: Found variable declaration '$variableName' at line ${lineIndex + 1}: ${line.trim()}")
+                    
+                    try {
+                        if (document != null && lineIndex < document.lineCount) {
+                            val lineStartOffset = document.getLineStartOffset(lineIndex)
+                            
+                            // Find the exact position of the variable name in the declaration
+                            val variableIndex = line.indexOf(variableName)
+                            if (variableIndex >= 0) {
+                                val exactOffset = lineStartOffset + variableIndex
+                                val elementAtOffset = file.findElementAt(exactOffset)
+                                if (elementAtOffset != null) {
+                                    println("GooGotoDeclaration: Navigating to variable declaration at offset $exactOffset")
+                                    return elementAtOffset
+                                }
+                            }
+                            
+                            // Fallback to line start
+                            return file.findElementAt(lineStartOffset) ?: file
+                        }
+                    } catch (e: Exception) {
+                        println("GooGotoDeclaration: Error finding variable declaration: ${e.message}")
+                    }
+                }
+            }
+        }
+        
+        return null
+    }
+    
+    private fun createVirtualGooPackage(element: PsiElement, packageName: String): PsiElement {
+        return findRealSourceFile(element, packageName, null) ?: createFallbackElement(element, packageName, null)
+    }
+    
+    private fun createVirtualPackageMember(element: PsiElement, packageName: String, memberName: String): PsiElement {
+        return findRealSourceFile(element, packageName, memberName) ?: createFallbackElement(element, packageName, memberName)
+    }
+    
+    private fun findRealSourceFile(element: PsiElement, packageName: String, memberName: String?): PsiElement? {
+        val project = element.project
+        val virtualFileManager = com.intellij.openapi.vfs.VirtualFileManager.getInstance()
+        val psiManager = com.intellij.psi.PsiManager.getInstance(project)
+        
+        // Try to find the best source file for the package
+        val packageDir = "/opt/other/go/src/$packageName"
+        val candidateFiles = listOf(
+            "$packageName.go",  // Main package file (e.g., strings.go, units.go)
+            "doc.go",           // Documentation file
+            "main.go"           // Main file for executable packages
+        )
+        
+        // First, try the candidate files in order
+        for (fileName in candidateFiles) {
+            val sourceFilePath = "$packageDir/$fileName"
+            try {
+                val virtualFile = virtualFileManager.findFileByUrl("file://$sourceFilePath")
+                if (virtualFile != null && virtualFile.exists()) {
+                    val psiFile = psiManager.findFile(virtualFile)
+                    if (psiFile != null) {
+                        println("GooGotoDeclaration: Found package file $sourceFilePath")
+                        
+                        // If looking for a specific member, try to find it in this file
+                        if (memberName != null) {
+                            val memberElement = findMemberInFile(psiFile, memberName)
+                            if (memberElement != null && memberElement != psiFile) {
+                                return memberElement // Found the member in this file
+                            }
+                        } else {
+                            return psiFile // Return the package file
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                println("GooGotoDeclaration: Error checking file $sourceFilePath: ${e.message}")
+            }
+        }
+        
+        // If looking for a specific member and not found in main files, search all .go files
+        if (memberName != null) {
+            try {
+                val packageDirFile = java.io.File(packageDir)
+                if (packageDirFile.exists() && packageDirFile.isDirectory) {
+                    val goFiles = packageDirFile.listFiles { _, name -> 
+                        name.endsWith(".go") && !name.endsWith("_test.go")
+                    } ?: emptyArray()
+                    
+                    for (goFile in goFiles) {
+                        val virtualFile = virtualFileManager.findFileByUrl("file://${goFile.absolutePath}")
+                        if (virtualFile != null && virtualFile.exists()) {
+                            val psiFile = psiManager.findFile(virtualFile)
+                            if (psiFile != null) {
+                                val memberElement = findMemberInFile(psiFile, memberName)
+                                if (memberElement != null && memberElement != psiFile) {
+                                    println("GooGotoDeclaration: Found $memberName in ${goFile.name}")
+                                    return memberElement
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                println("GooGotoDeclaration: Error searching for member $memberName in $packageName: ${e.message}")
+            }
+        }
+        
+        // Fallback: return the first .go file we can find in the package
+        try {
+            val packageDirFile = java.io.File(packageDir)
+            if (packageDirFile.exists() && packageDirFile.isDirectory) {
+                val firstGoFile = packageDirFile.listFiles { _, name -> 
+                    name.endsWith(".go") && !name.endsWith("_test.go")
+                }?.firstOrNull()
+                
+                if (firstGoFile != null) {
+                    val virtualFile = virtualFileManager.findFileByUrl("file://${firstGoFile.absolutePath}")
+                    if (virtualFile != null && virtualFile.exists()) {
+                        val psiFile = psiManager.findFile(virtualFile)
+                        if (psiFile != null) {
+                            println("GooGotoDeclaration: Fallback to ${firstGoFile.name} for package $packageName")
+                            return psiFile
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("GooGotoDeclaration: Error with fallback for $packageName: ${e.message}")
+        }
+        
+        return null
+    }
+    
+    private fun findMemberInFile(psiFile: com.intellij.psi.PsiFile, memberName: String): PsiElement? {
+        val text = psiFile.text
+        val lines = text.split('\n')
+        
+        // Enhanced patterns to match different Go declaration styles
+        val patterns = listOf(
+            // Function definitions: func MemberName(...) or MemberName = func(...)
+            Regex("^\\s*func\\s+$memberName\\s*\\("),
+            Regex("^\\s*$memberName\\s*=\\s*func\\s*\\("),
+            
+            // Variable/constant declarations with proper whitespace handling
+            Regex("^\\s*(var|const)\\s+$memberName\\b"),
+            Regex("^\\s*$memberName\\s*=\\s*\\w"),  // MemberName = ...
+            
+            // Global variable declarations in var blocks
+            Regex("^\\s*$memberName\\s+[=\\w]"),  // Handle "Km  = NewUnit..." pattern
+            
+            // Type definitions: type MemberName
+            Regex("^\\s*type\\s+$memberName\\s+"),
+            
+            // Method definitions: func (receiver) MemberName
+            Regex("^\\s*func\\s*\\([^)]*\\)\\s*$memberName\\s*\\(")
+        )
+        
+        for ((lineIndex, line) in lines.withIndex()) {
+            for (pattern in patterns) {
+                if (pattern.containsMatchIn(line) && line.contains(memberName)) {
+                    println("GooGotoDeclaration: Found $memberName at line ${lineIndex + 1}: ${line.trim()}")
+                    
+                    // Try to find the exact PSI element at this line
+                    try {
+                        val document = com.intellij.psi.PsiDocumentManager.getInstance(psiFile.project).getDocument(psiFile)
+                        if (document != null && lineIndex < document.lineCount) {
+                            val lineStartOffset = document.getLineStartOffset(lineIndex)
+                            
+                            // Find the exact position of the member name in the line
+                            val memberIndex = line.indexOf(memberName)
+                            if (memberIndex >= 0) {
+                                val exactOffset = lineStartOffset + memberIndex
+                                val elementAtOffset = psiFile.findElementAt(exactOffset)
+                                if (elementAtOffset != null) {
+                                    println("GooGotoDeclaration: Navigating to exact offset $exactOffset for $memberName")
+                                    return elementAtOffset
+                                }
+                            }
+                            
+                            // Fallback to line start if exact position not found
+                            return psiFile.findElementAt(lineStartOffset) ?: psiFile
+                        }
+                    } catch (e: Exception) {
+                        println("GooGotoDeclaration: Error finding element at line $lineIndex: ${e.message}")
+                    }
+                }
+            }
+        }
+        
+        println("GooGotoDeclaration: Member $memberName not found in ${psiFile.name}, returning file")
+        return psiFile // Return the file if we can't find the specific member
+    }
+    
+    private fun createFallbackElement(element: PsiElement, packageName: String, memberName: String?): PsiElement {
+        // Create a virtual documentation element as fallback
+        return object : PsiElement by element {
+            override fun toString(): String = if (memberName != null) {
+                "$packageName.$memberName"
+            } else {
+                "Goo Package: $packageName"
+            }
+            
+            override fun getText(): String {
+                return if (memberName != null) {
+                    "// $packageName.$memberName (source file not found at /opt/other/go/src/$packageName/$packageName.go)"
+                } else {
+                    "// Package $packageName (source file not found at /opt/other/go/src/$packageName/$packageName.go)"
                 }
             }
         }

@@ -79,7 +79,7 @@
         <!-- Go-to-Declaration Handler -->
         <gotoDeclarationHandler implementation="com.pannous.goo.navigation.GooGotoDeclarationHandler"/>
         
-        <!-- Reference Resolution - Disabled to prevent crashes -->
+        <!-- Reference Resolution - Temporarily disabled to fix plugin error -->
         <!-- <psi.referenceContributor language="Goo"
                                  implementationClass="com.pannous.goo.psi.GooReferenceContributor"/> -->
         

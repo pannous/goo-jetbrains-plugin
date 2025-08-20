@@ -12,14 +12,19 @@ import com.pannous.goo.lexer.GooTokenTypes
 class GooCompletionContributor : CompletionContributor() {
     
     init {
-        // Basic keyword completion
+        // Built-in methods completion (e.g., "hello".reverse(), [1,2,3].filter()) - HIGHEST PRIORITY
         extend(
             CompletionType.BASIC,
-            PlatformPatterns.psiElement().withLanguage(GooLanguage),
-            GooKeywordCompletionProvider()
+            PlatformPatterns.psiElement()
+                .withLanguage(GooLanguage)
+                .afterLeaf(
+                    PlatformPatterns.psiElement()
+                        .withText(".")
+                ),
+            GooBuiltinMethodsProvider()
         )
         
-        // Package member completion (e.g., units.Meter, fmt.Println)
+        // Package member completion (e.g., units.Meter, fmt.Println) - HIGH PRIORITY
         extend(
             CompletionType.BASIC,
             PlatformPatterns.psiElement()
@@ -31,11 +36,18 @@ class GooCompletionContributor : CompletionContributor() {
             GooPackageCompletionProvider()
         )
         
-        // Direct package completion as fallback
+        // Direct package completion as fallback - HIGH PRIORITY
         extend(
             CompletionType.BASIC,
             PlatformPatterns.psiElement().withLanguage(GooLanguage),
             GooDirectCompletionProvider()
+        )
+        
+        // Basic keyword completion - LOWER PRIORITY
+        extend(
+            CompletionType.BASIC,
+            PlatformPatterns.psiElement().withLanguage(GooLanguage),
+            GooKeywordCompletionProvider()
         )
         
         // Smart completion for more advanced features
@@ -321,8 +333,9 @@ class GooSmartCompletionProvider : CompletionProvider<CompletionParameters>() {
     }
     
     private fun addStringMethodCompletions(result: CompletionResultSet) {
-        // Goo string methods (as mentioned in GOO.md)
-        listOf("contains", "hasPrefix", "hasSuffix", "toUpper", "toLower", "split", "replace").forEach { method ->
+        // Note: Basic string methods are now handled by GooBuiltinMethodsProvider
+        // This method is kept for backward compatibility and fallback cases
+        listOf("length", "charAt", "substring").forEach { method ->
             result.addElement(
                 LookupElementBuilder.create(method)
                     .withTypeText("string method")
