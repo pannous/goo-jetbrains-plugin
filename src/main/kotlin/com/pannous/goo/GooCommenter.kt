@@ -1,12 +1,13 @@
 package com.pannous.goo
 
 import com.intellij.lang.CodeDocumentationAwareCommenter
+import com.intellij.lang.Commenter
 import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiElement
 import com.intellij.psi.tree.IElementType
 import com.pannous.goo.lexer.GooTokenTypes
 
-class GooCommenter : CodeDocumentationAwareCommenter {
+class GooCommenter : CodeDocumentationAwareCommenter, Commenter {
     
     // Primary comment prefix (what we'll add when commenting)
     override fun getLineCommentPrefix(): String = "#"

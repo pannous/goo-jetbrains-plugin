@@ -4,7 +4,7 @@ import com.intellij.codeInsight.generation.actions.CommentByLineCommentAction
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
@@ -18,7 +18,8 @@ class GooToggleCommentAction : AnAction() {
     
     override fun update(e: AnActionEvent) {
         val file = e.getData(CommonDataKeys.PSI_FILE)
-        e.presentation.isEnabledAndVisible = file is GooFile
+        val editor = e.getData(CommonDataKeys.EDITOR)
+        e.presentation.isEnabledAndVisible = file is GooFile && editor != null
     }
     
     override fun actionPerformed(e: AnActionEvent) {
@@ -28,9 +29,9 @@ class GooToggleCommentAction : AnAction() {
         
         if (file !is GooFile) return
         
-        WriteCommandAction.runWriteCommandAction(project) {
+        WriteCommandAction.runWriteCommandAction(project, "Toggle Goo Comments", null, {
             toggleComments(editor, project)
-        }
+        })
     }
     
     private fun toggleComments(editor: Editor, project: Project) {

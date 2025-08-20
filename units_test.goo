@@ -1,0 +1,9 @@
+package main
+
+import "units"
+
+func main() {
+    s := units.Second(1)
+    m := units.Meter(5.0)
+    energy := units.Convert(100, units.Joule, units.Watt)
+}
