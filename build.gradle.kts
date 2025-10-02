@@ -1,7 +1,7 @@
 plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "2.2.0"
-    id("org.jetbrains.intellij.platform") version "2.6.0"
+    id("org.jetbrains.intellij.platform") version "2.9.0"
 }
 
 group = "com.pannous"
@@ -40,15 +40,15 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
-            sinceBuild = "251"
-            untilBuild = "251.*"
+            sinceBuild = "252"
+            untilBuild = "252.*"
         }
     }
 }
 
 dependencies {
     intellijPlatform {
-        local("/Applications/GoLand.app/Contents")
+        goland("2025.2.2")
     }
 }
 java {
