@@ -40,15 +40,15 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
-            sinceBuild = "252"
-            untilBuild = "252.*"
+            sinceBuild = "253"
+            untilBuild = "253.*"
         }
     }
 }
 
 dependencies {
     intellijPlatform {
-        goland("2025.2.2")
+        goland("2025.3")
     }
 }
 java {
